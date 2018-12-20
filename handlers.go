@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -52,6 +53,7 @@ func (a *annotator) dumpTo(c *gin.Context, path string) {
 }
 
 func (a *annotator) dumpLocked(path string) error {
+	log.Printf("dumping to %q", path)
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 	return writeItems(path, a.items)

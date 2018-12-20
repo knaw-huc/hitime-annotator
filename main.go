@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,7 +41,26 @@ func main() {
 	srv := &http.Server{
 		Addr: addr,
 	}
+
+	// shutdownCh is closed after srv.Shutdown has returned, meaning that
+	// all connections have been closed.
 	shutdownCh := make(chan struct{})
+
+	shutdown := func(ctx context.Context) {
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Printf("HTTP server Shutdown: %v", err)
+		}
+		close(shutdownCh)
+	}
+
+	// Catch SIGINT (ctrl+c) and gracefully shutdown the server, so that we
+	// can save what we have.
+	go func() {
+		sigs := make(chan os.Signal, 1)
+		signal.Notify(sigs, os.Interrupt)
+		<-sigs
+		shutdown(context.Background())
+	}()
 
 	r := gin.Default()
 	r.SetHTMLTemplate(html)
@@ -56,12 +77,7 @@ func main() {
 	r.GET("/shutdown/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "confirmShutdown", nil)
 	})
-	r.GET("/shutdown/really", func(c *gin.Context) {
-		if err := srv.Shutdown(c); err != nil {
-			log.Printf("HTTP server Shutdown: %v", err)
-		}
-		close(shutdownCh)
-	})
+	r.GET("/shutdown/really", func(c *gin.Context) { shutdown(c) })
 
 	srv.Handler = r
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
@@ -69,6 +85,10 @@ func main() {
 	}
 
 	<-shutdownCh
+	err = writeItems(path, a.items)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // An item is an input to be annotated, its candidates, and optionally
