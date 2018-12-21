@@ -186,19 +186,6 @@ func (a *annotator) setGolden(i int, answer string) (done int, err error) {
 }
 
 func init() {
-	template.Must(html.New("confirmShutdown").Parse(`<html>
-<head><title>Shutdown?</title></head>
-<body>
-	<div>Are you sure you want to stop the annotation interface?</div>
-	<div>
-		<span><a href="really">Yes</a></span>
-		<span><a href="/">No</a></span>
-	</div>
-</body>
-</html>`))
-}
-
-func init() {
 	// Wants a struct{Answer string; Done, Total int} as argument.
 	template.Must(html.New("save").Parse(`<html>
 <head><title>Save</title></head>

@@ -42,16 +42,10 @@ func main() {
 		Addr: addr,
 	}
 
-	// shutdownCh is closed after srv.Shutdown has returned, meaning that
-	// all connections have been closed.
-	shutdownCh := make(chan struct{})
-
-	shutdown := func(ctx context.Context) {
-		if err := srv.Shutdown(ctx); err != nil {
-			log.Printf("HTTP server Shutdown: %v", err)
-		}
-		close(shutdownCh)
-	}
+	// idleClosed is closed after srv.Shutdown has returned.
+	// At that point, all idle connections have been closed and we can
+	// terminate the program.
+	idleClosed := make(chan struct{})
 
 	// Catch SIGINT (ctrl+c) and gracefully shutdown the server, so that we
 	// can save what we have.
@@ -59,7 +53,11 @@ func main() {
 		sigs := make(chan os.Signal, 1)
 		signal.Notify(sigs, os.Interrupt)
 		<-sigs
-		shutdown(context.Background())
+
+		if err := srv.Shutdown(context.Background()); err != nil {
+			log.Printf("HTTP server Shutdown: %v", err)
+		}
+		close(idleClosed)
 	}()
 
 	r := gin.Default()
@@ -70,21 +68,15 @@ func main() {
 	r.GET("/annotate/", a.annotateRandom)
 	r.GET("/annotate/:index/", a.annotate)
 	r.POST("/annotate/:index/save", a.save)
-
 	r.GET("/dump/", a.dump)
 	r.GET("/save/", func(c *gin.Context) { a.dumpTo(c, path) })
-
-	r.GET("/shutdown/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "confirmShutdown", nil)
-	})
-	r.GET("/shutdown/really", func(c *gin.Context) { shutdown(c) })
 
 	srv.Handler = r
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		log.Printf("HTTP server ListenAndServe: %v", err)
 	}
 
-	<-shutdownCh
+	<-idleClosed
 	err = writeItems(path, a.items)
 	if err != nil {
 		log.Fatal(err)
