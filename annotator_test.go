@@ -78,7 +78,8 @@ func compress(p []byte) []byte {
 
 func TestSetGolden(t *testing.T) {
 	items := make([]item, 10000)
-	a := newAnnotator(items)
+	a := &annotator{items: items}
+	a.initTodo()
 
 	const nproc = 10
 	batchsize := len(items) / nproc

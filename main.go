@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-
-	"github.com/gin-gonic/gin"
 )
 
 var debug = false
@@ -20,26 +18,21 @@ func init() {
 
 func main() {
 	flag.Parse()
-	if !debug {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
 	args := flag.Args()
 	if len(args) != 2 {
 		fmt.Fprintf(os.Stderr, "usage: %s addr file\n", os.Args[0])
 		os.Exit(1)
 	}
 
-	path := args[1]
-	items, err := readItems(path)
+	a, err := newAnnotator(args[1])
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("%d items", len(items))
+	log.Printf("%d items", len(a.items))
 
-	addr := args[0]
 	srv := &http.Server{
-		Addr: addr,
+		Addr:    args[0],
+		Handler: a.makeHandler(),
 	}
 
 	// idleClosed is closed after srv.Shutdown has returned.
@@ -60,24 +53,12 @@ func main() {
 		close(idleClosed)
 	}()
 
-	r := gin.Default()
-	r.SetHTMLTemplate(html)
-
-	a := newAnnotator(items)
-	r.GET("/", a.home)
-	r.GET("/annotate/", a.annotateRandom)
-	r.GET("/annotate/:index/", a.annotate)
-	r.POST("/annotate/:index/save", a.save)
-	r.GET("/dump/", a.dump)
-	r.GET("/save/", func(c *gin.Context) { a.dumpTo(c, path) })
-
-	srv.Handler = r
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		log.Printf("HTTP server ListenAndServe: %v", err)
 	}
 
 	<-idleClosed
-	err = writeItems(path, a.items)
+	err = a.saveLocked()
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -15,23 +15,51 @@ import (
 
 var html = template.New("")
 
+// An annotator holds a collection of items, some annotated, some not yet.
 type annotator struct {
 	items []item
+	path  string       // path of file read from, or ""
 	mu    sync.RWMutex // protects todo
 	todo  intset       // indices of items not yet annotated
 }
 
-func newAnnotator(items []item) *annotator {
-	a := &annotator{items: items}
-	a.todo.Init(len(items))
+func newAnnotator(path string) (a *annotator, err error) {
+	items, err := readItems(path)
+	if err != nil {
+		return
+	}
+	a = &annotator{items: items, path: path}
+	a.initTodo()
+	return
+}
 
-	for i, it := range items {
+func (a *annotator) initTodo() {
+	a.todo.Init(len(a.items))
+
+	for i, it := range a.items {
 		if it.Golden == "" {
 			a.todo.Add(i)
 		}
 	}
+}
 
-	return a
+// Make an HTTP handler for a.
+func (a *annotator) makeHandler() http.Handler {
+	if !debug {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	r := gin.Default()
+	r.SetHTMLTemplate(html)
+
+	r.GET("/", a.home)
+	r.GET("/annotate/", a.annotateRandom)
+	r.GET("/annotate/:index/", a.annotate)
+	r.POST("/annotate/:index/save", a.postAnswer)
+	r.GET("/dump/", a.dump)
+	r.GET("/save/", func(c *gin.Context) { a.save(c) })
+
+	return r
 }
 
 func (a *annotator) dump(c *gin.Context) {
@@ -41,22 +69,22 @@ func (a *annotator) dump(c *gin.Context) {
 	c.JSON(http.StatusOK, a.items)
 }
 
-func (a *annotator) dumpTo(c *gin.Context, path string) {
-	err := a.dumpLocked(path)
+func (a *annotator) save(c *gin.Context) {
+	err := a.saveLocked()
 	switch err {
 	case nil:
-		c.String(http.StatusOK, "Successfully saved to %q", path)
+		c.String(http.StatusOK, "Successfully saved to %q", a.path)
 	default:
 		c.String(http.StatusInternalServerError,
-			"Error saving to %q: %v", path, err)
+			"Error saving to %q: %v", a.path, err)
 	}
 }
 
-func (a *annotator) dumpLocked(path string) error {
-	log.Printf("dumping to %q", path)
+func (a *annotator) saveLocked() error {
+	log.Printf("dumping to %q", a.path)
 	a.mu.RLock()
 	defer a.mu.RUnlock()
-	return writeItems(path, a.items)
+	return writeItems(a.path, a.items)
 }
 
 // Gets the "index" param from c as an integer and checks whether it is
@@ -139,7 +167,7 @@ func (a *annotator) annotateRandom(c *gin.Context) {
 	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/annotate/%d/", i))
 }
 
-func (a *annotator) save(c *gin.Context) {
+func (a *annotator) postAnswer(c *gin.Context) {
 	i := a.getIndex(c)
 	if i == -1 {
 		return
@@ -157,7 +185,7 @@ func (a *annotator) save(c *gin.Context) {
 		return
 	}
 
-	c.HTML(http.StatusOK, "save", struct {
+	c.HTML(http.StatusOK, "postanswer", struct {
 		Answer      string
 		Done, Total int
 	}{
@@ -187,7 +215,7 @@ func (a *annotator) setGolden(i int, answer string) (done int, err error) {
 
 func init() {
 	// Wants a struct{Answer string; Done, Total int} as argument.
-	template.Must(html.New("save").Parse(`<html>
+	template.Must(html.New("postanswer").Parse(`<html>
 <head><title>Save</title></head>
 <body>
 	<div>Successfully saved answer: <strong>{{ .Answer }}.</div>
