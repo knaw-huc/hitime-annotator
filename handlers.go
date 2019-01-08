@@ -135,24 +135,31 @@ func (a *annotator) annotate(c *gin.Context) {
 func init() {
 	// Wants an item as argument.
 	template.Must(html.New("annotate").Parse(`<html>
-<head><title>Annotator</title></head>
+<head>
+	<title>Annotator</title>
+	<script language="javascript">
+		function enableSave() {
+			document.getElementById('save').disabled = false;
+		}
+	</script>
+</head>
 <body>
 	<div>Input: <strong>{{ .Input }}</strong></div>
 	<form action="save" method="post">
 	{{ range .Candidates }}
 		<div>
-			<input type="radio" name="answer" value="{{ .Id }}">
+			<input type="radio" name="answer" value="{{ .Id }}" onclick="enableSave()">
 				{{ range .Names }}<em>{{ . }}</em>, {{ end }}
 				<small>(distance {{ .Distance }})</small>
 			</input>
 		</div>
 	{{ end }}
 	<div>
-		<input type="radio" name="answer" value="?">
+		<input type="radio" name="answer" value="?" onclick="enableSave()">
 		<em>Not in list</em>
 		</input>
 	</div>
-	<input type="submit" value="Save"/>
+	<input type="submit" id="save" value="Save" disabled="true"/>
 	</form>
 
 	<div><a href="..">Skip</a> (random other item)</div>
