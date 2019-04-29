@@ -1,0 +1,10 @@
+/data
+
+# UI:
+node_modules
+
+# misc
+.DS_Store
+.idea/*
+*.iml
+
