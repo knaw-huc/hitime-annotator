@@ -13,7 +13,7 @@ class MainHeader extends React.Component<any, any> {
             <div className="main-header">
                 <h1><Link to="/">Evidence</Link></h1>
                 <div className="main-nav text-center">
-                    <Link className="nav-item" to={"/rate/"}>rate</Link>
+                    <Link className="nav-item" to={"/rate/"}>link</Link>
                 </div>
             </div>
         );
