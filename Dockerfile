@@ -16,4 +16,4 @@ COPY --from=buildserver /go/bin/hitime-annotator .
 
 EXPOSE 8080
 
-ENTRYPOINT ["./hitime-annotator", "localhost:8080", "/data/todo.json.gz"]
+ENTRYPOINT ["./hitime-annotator", ":8080", "/data/todo.json.gz"]
