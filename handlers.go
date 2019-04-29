@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -54,10 +55,14 @@ func (a *annotator) makeHandler() http.Handler {
 
 	r.GET("/", a.home)
 	r.GET("/annotate/", a.annotateRandom)
-	r.GET("/annotate/:index/", a.annotate)
+	r.GET("/annotate/:index/", a.annotateHTML)
 	r.POST("/annotate/:index/save", a.postAnswer)
 	r.GET("/dump/", a.dump)
 	r.GET("/save/", func(c *gin.Context) { a.save(c) })
+
+	r.GET("/api/item/:index", a.getItem)
+	r.PUT("/api/item/:index", a.putAnswer)
+	r.GET("/api/randomindex", a.randomIndex)
 
 	return r
 }
@@ -122,8 +127,17 @@ func init() {
 </html>`))
 }
 
+func (a *annotator) getItem(c *gin.Context) {
+	i := a.getIndex(c)
+	if i == -1 {
+		return
+	}
+
+	c.JSON(http.StatusOK, a.items[i])
+}
+
 // Renders the annotation interface for a given index.
-func (a *annotator) annotate(c *gin.Context) {
+func (a *annotator) annotateHTML(c *gin.Context) {
 	i := a.getIndex(c)
 	if i == -1 {
 		return
@@ -174,6 +188,14 @@ func (a *annotator) annotateRandom(c *gin.Context) {
 	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/annotate/%d/", i))
 }
 
+func (a *annotator) randomIndex(c *gin.Context) {
+	a.mu.RLock()
+	i := rand.Intn(a.todo.Len())
+	a.mu.RUnlock()
+
+	c.JSON(http.StatusOK, i)
+}
+
 func (a *annotator) postAnswer(c *gin.Context) {
 	i := a.getIndex(c)
 	if i == -1 {
@@ -188,7 +210,7 @@ func (a *annotator) postAnswer(c *gin.Context) {
 
 	done, err := a.setGolden(i, answer)
 	if err != nil {
-		c.String(http.StatusInternalServerError, err.Error())
+		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -200,6 +222,27 @@ func (a *annotator) postAnswer(c *gin.Context) {
 		Done:   done,
 		Total:  len(a.items),
 	})
+}
+
+func (a *annotator) putAnswer(c *gin.Context) {
+	i := a.getIndex(c)
+	if i == -1 {
+		return
+	}
+
+	answer, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	_, err = a.setGolden(i, string(answer))
+	if err != nil {
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.Status(http.StatusOK)
 }
 
 // Stores the given answer for the i'th item in a.
