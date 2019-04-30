@@ -11,8 +11,23 @@ RUN CGO_ENABLED=0 go test ./...
 RUN CGO_ENABLED=0 go install -ldflags="-s" .
 
 
+FROM node:11-alpine as buildui
+
+WORKDIR /hitime
+ENV REACT_APP_HOST=http://localhost:8080
+COPY ui/package.json .
+COPY ui/package-lock.json .
+COPY ui/tsconfig.json .
+COPY ui/public public
+COPY ui/src src
+
+RUN npm install
+RUN npm run build
+
+
 FROM scratch
 COPY --from=buildserver /go/bin/hitime-annotator .
+COPY --from=buildui /hitime/build ./ui
 
 EXPOSE 8080
 

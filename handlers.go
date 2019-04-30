@@ -9,7 +9,9 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/julienschmidt/httprouter"
@@ -49,6 +51,8 @@ func (a *annotator) initTodo() {
 func (a *annotator) makeHandler() http.Handler {
 	r := httprouter.New()
 
+	r.Handler("GET", "/", http.RedirectHandler("/ui/", http.StatusPermanentRedirect))
+
 	r.GET("/dump/", a.dump)
 	r.GET("/save/", a.save)
 
@@ -56,6 +60,8 @@ func (a *annotator) makeHandler() http.Handler {
 	r.PUT("/api/item/:index", a.putAnswer)
 	r.GET("/api/randomindex", a.randomIndex)
 	r.GET("/api/statistics", a.statistics)
+
+	r.GET("/ui/*path", ui)
 
 	return r
 }
@@ -177,4 +183,21 @@ func writeJSON(w http.ResponseWriter, x interface{}) {
 	if err != nil {
 		log.Print(err)
 	}
+}
+
+// Serve UI components. Any path that does not resolve to a file inside s.uiDir
+// serves index.html instead, so the React router can take care of it.
+//
+// Roughly equivalent to the .htaccess rules
+//
+//      RewriteCond %{REQUEST_FILENAME} !-f
+//      RewriteRule ^ index.html [QSA,L]
+func ui(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	path := httprouter.CleanPath(ps.ByName("path"))
+
+	if path != "/favicon.png" && !strings.HasPrefix(path, "/static/") {
+		path = "/index.html"
+	}
+	http.ServeFile(w, r, filepath.Join("ui", path))
+	return
 }
