@@ -63,6 +63,7 @@ func (a *annotator) makeHandler() http.Handler {
 	r.GET("/api/item/:index", a.getItem)
 	r.PUT("/api/item/:index", a.putAnswer)
 	r.GET("/api/randomindex", a.randomIndex)
+	r.GET("/api/statistics", a.statistics)
 
 	return r
 }
@@ -113,6 +114,21 @@ func (a *annotator) home(c *gin.Context) {
 	c.HTML(http.StatusOK, "home", struct{ Todo, Total int }{
 		Todo:  numTodo,
 		Total: len(a.items),
+	})
+}
+
+func (a *annotator) statistics(c *gin.Context) {
+	a.mu.RLock()
+	todo := a.todo.Len()
+	total := len(a.items)
+	a.mu.RUnlock()
+
+	c.JSON(http.StatusOK, struct {
+		Todo int `json:"todo"`
+		Done int `json:"done"`
+	}{
+		Todo: todo,
+		Done: total - todo,
 	})
 }
 
