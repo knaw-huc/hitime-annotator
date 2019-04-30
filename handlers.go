@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -10,7 +12,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/gin-gonic/gin"
+	"github.com/julienschmidt/httprouter"
 )
 
 var html = template.New("")
@@ -45,14 +47,10 @@ func (a *annotator) initTodo() {
 
 // Make an HTTP handler for a.
 func (a *annotator) makeHandler() http.Handler {
-	if !debug {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
-	r := gin.Default()
+	r := httprouter.New()
 
 	r.GET("/dump/", a.dump)
-	r.GET("/save/", func(c *gin.Context) { a.save(c) })
+	r.GET("/save/", a.save)
 
 	r.GET("/api/item/:index", a.getItem)
 	r.PUT("/api/item/:index", a.putAnswer)
@@ -62,21 +60,21 @@ func (a *annotator) makeHandler() http.Handler {
 	return r
 }
 
-func (a *annotator) dump(c *gin.Context) {
+func (a *annotator) dump(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
-	c.JSON(http.StatusOK, a.items)
+	writeJSON(w, a.items)
 }
 
-func (a *annotator) save(c *gin.Context) {
+func (a *annotator) save(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	err := a.saveLocked()
 	switch err {
 	case nil:
-		c.String(http.StatusOK, "Successfully saved to %q", a.path)
+		fmt.Fprintf(w, "Successfully saved to %q", a.path)
 	default:
-		c.String(http.StatusInternalServerError,
-			"Error saving to %q: %v", a.path, err)
+		http.Error(w, fmt.Sprintf("Error saving to %q: %v", a.path, err),
+			http.StatusInternalServerError)
 	}
 }
 
@@ -89,24 +87,24 @@ func (a *annotator) saveLocked() error {
 
 // Gets the "index" param from c as an integer and checks whether it is
 // in-bounds for items. Otherwise, returns -1 after rendering an error message.
-func (a *annotator) getIndex(c *gin.Context) int {
-	idxparam := c.Param("index")
+func (a *annotator) getIndex(w http.ResponseWriter, ps httprouter.Params) int {
+	idxparam := ps.ByName("index")
 	i, err := strconv.Atoi(idxparam)
 
 	if err != nil || i < 0 || i >= len(a.items) {
-		c.String(http.StatusNotFound, "invalid index %q", idxparam)
+		http.Error(w, fmt.Sprintf("invalid index %q", idxparam), http.StatusNotFound)
 		return -1
 	}
 	return i
 }
 
-func (a *annotator) statistics(c *gin.Context) {
+func (a *annotator) statistics(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	a.mu.RLock()
 	todo := a.todo.Len()
 	total := len(a.items)
 	a.mu.RUnlock()
 
-	c.JSON(http.StatusOK, struct {
+	writeJSON(w, struct {
 		Todo int `json:"todo"`
 		Done int `json:"done"`
 	}{
@@ -115,30 +113,30 @@ func (a *annotator) statistics(c *gin.Context) {
 	})
 }
 
-func (a *annotator) getItem(c *gin.Context) {
-	i := a.getIndex(c)
+func (a *annotator) getItem(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	i := a.getIndex(w, ps)
 	if i == -1 {
 		return
 	}
 
-	c.JSON(http.StatusOK, a.items[i])
+	writeJSON(w, a.items[i])
 }
 
-func (a *annotator) randomIndex(c *gin.Context) {
+func (a *annotator) randomIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	a.mu.RLock()
 	i := rand.Intn(a.todo.Len())
 	a.mu.RUnlock()
 
-	c.JSON(http.StatusOK, i)
+	writeJSON(w, i)
 }
 
-func (a *annotator) putAnswer(c *gin.Context) {
-	i := a.getIndex(c)
+func (a *annotator) putAnswer(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	i := a.getIndex(w, ps)
 	if i == -1 {
 		return
 	}
 
-	answer, err := ioutil.ReadAll(c.Request.Body)
+	answer, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Print(err)
 		return
@@ -146,11 +144,11 @@ func (a *annotator) putAnswer(c *gin.Context) {
 
 	_, err = a.setGolden(i, string(answer))
 	if err != nil {
-		c.String(http.StatusBadRequest, err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	c.Status(http.StatusOK)
+	w.WriteHeader(http.StatusOK)
 }
 
 // Stores the given answer for the i'th item in a.
@@ -169,4 +167,14 @@ func (a *annotator) setGolden(i int, answer string) (done int, err error) {
 	a.items[i].Golden = answer
 	done++
 	return
+}
+
+func writeJSON(w http.ResponseWriter, x interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	err := json.NewEncoder(w).Encode(x)
+	if err != nil {
+		log.Print(err)
+	}
 }
