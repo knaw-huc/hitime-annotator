@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -51,12 +50,7 @@ func (a *annotator) makeHandler() http.Handler {
 	}
 
 	r := gin.Default()
-	r.SetHTMLTemplate(html)
 
-	r.GET("/", a.home)
-	r.GET("/annotate/", a.annotateRandom)
-	r.GET("/annotate/:index/", a.annotateHTML)
-	r.POST("/annotate/:index/save", a.postAnswer)
 	r.GET("/dump/", a.dump)
 	r.GET("/save/", func(c *gin.Context) { a.save(c) })
 
@@ -106,17 +100,6 @@ func (a *annotator) getIndex(c *gin.Context) int {
 	return i
 }
 
-func (a *annotator) home(c *gin.Context) {
-	a.mu.RLock()
-	numTodo := a.todo.Len()
-	a.mu.RUnlock()
-
-	c.HTML(http.StatusOK, "home", struct{ Todo, Total int }{
-		Todo:  numTodo,
-		Total: len(a.items),
-	})
-}
-
 func (a *annotator) statistics(c *gin.Context) {
 	a.mu.RLock()
 	todo := a.todo.Len()
@@ -132,17 +115,6 @@ func (a *annotator) statistics(c *gin.Context) {
 	})
 }
 
-func init() {
-	// Wants a struct{ Todo, Total int } as argument.
-	template.Must(html.New("home").Parse(`<html>
-<head><title>Annotator</title></head>
-<body>
-	<div>To do: {{ .Todo }} items out of {{ .Total }} left to annotate.</div>
-	<div><a href="/annotate/">Annotate random</a></div>
-</body>
-</html>`))
-}
-
 func (a *annotator) getItem(c *gin.Context) {
 	i := a.getIndex(c)
 	if i == -1 {
@@ -152,92 +124,12 @@ func (a *annotator) getItem(c *gin.Context) {
 	c.JSON(http.StatusOK, a.items[i])
 }
 
-// Renders the annotation interface for a given index.
-func (a *annotator) annotateHTML(c *gin.Context) {
-	i := a.getIndex(c)
-	if i == -1 {
-		return
-	}
-
-	c.HTML(http.StatusOK, "annotate", a.items[i])
-}
-
-func init() {
-	// Wants an item as argument.
-	template.Must(html.New("annotate").Parse(`<html>
-<head>
-	<title>Annotator</title>
-	<script language="javascript">
-		function enableSave() {
-			document.getElementById('save').disabled = false;
-		}
-	</script>
-</head>
-<body>
-	<div>Input: <strong>{{ .Input }}</strong></div>
-	<form action="save" method="post">
-	{{ range .Candidates }}
-		<div>
-			<input type="radio" name="answer" value="{{ .Id }}" onclick="enableSave()">
-				{{ range .Names }}<em>{{ . }}</em>, {{ end }}
-				<small>(distance {{ .Distance }})</small>
-			</input>
-		</div>
-	{{ end }}
-	<div>
-		<input type="radio" name="answer" value="?" onclick="enableSave()">
-		<em>Not in list</em>
-		</input>
-	</div>
-	<input type="submit" id="save" value="Save" disabled="true"/>
-	</form>
-
-	<div><a href="..">Skip</a> (random other item)</div>
-	<div><a href="/">Home</a>
-</body>
-</html>`))
-}
-
-// Redirects to the annotation page for a random unannotated item.
-func (a *annotator) annotateRandom(c *gin.Context) {
-	i := a.todo.At(rand.Intn(a.todo.Len()))
-	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/annotate/%d/", i))
-}
-
 func (a *annotator) randomIndex(c *gin.Context) {
 	a.mu.RLock()
 	i := rand.Intn(a.todo.Len())
 	a.mu.RUnlock()
 
 	c.JSON(http.StatusOK, i)
-}
-
-func (a *annotator) postAnswer(c *gin.Context) {
-	i := a.getIndex(c)
-	if i == -1 {
-		return
-	}
-
-	answer := c.PostForm("answer")
-	if answer == "" {
-		c.String(http.StatusBadRequest, "No answer in POST data")
-		return
-	}
-
-	done, err := a.setGolden(i, answer)
-	if err != nil {
-		c.String(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	c.HTML(http.StatusOK, "postanswer", struct {
-		Answer      string
-		Done, Total int
-	}{
-		Answer: answer,
-		Done:   done,
-		Total:  len(a.items),
-	})
 }
 
 func (a *annotator) putAnswer(c *gin.Context) {
@@ -277,16 +169,4 @@ func (a *annotator) setGolden(i int, answer string) (done int, err error) {
 	a.items[i].Golden = answer
 	done++
 	return
-}
-
-func init() {
-	// Wants a struct{Answer string; Done, Total int} as argument.
-	template.Must(html.New("postanswer").Parse(`<html>
-<head><title>Save</title></head>
-<body>
-	<div>Successfully saved answer: <strong>{{ .Answer }}.</div>
-	<div>{{ .Done }} out of {{ .Total }} done.</div>
-	<div><a href="..">Continue</a></div>
-</body>
-</html>`))
 }
