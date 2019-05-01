@@ -1,0 +1,9 @@
+Dockerfile
+hitime-annotator
+
+data/
+
+**/.*
+**/_*
+
+ui/node_modules

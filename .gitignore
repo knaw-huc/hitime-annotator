@@ -1,4 +1,6 @@
+hitime-annotator
 /data
+*.json.gz
 
 # UI:
 node_modules

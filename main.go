@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,28 +9,20 @@ import (
 	"os/signal"
 )
 
-var debug = false
-
-func init() {
-	flag.BoolVar(&debug, "debug", false, "debug mode")
-}
-
 func main() {
-	flag.Parse()
-	args := flag.Args()
-	if len(args) != 2 {
+	if len(os.Args) != 3 {
 		fmt.Fprintf(os.Stderr, "usage: %s addr file\n", os.Args[0])
 		os.Exit(1)
 	}
 
-	a, err := newAnnotator(args[1])
+	a, err := newAnnotator(os.Args[2])
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Printf("%d items", len(a.items))
 
 	srv := &http.Server{
-		Addr:    args[0],
+		Addr:    os.Args[1],
 		Handler: a.makeHandler(),
 	}
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -8,10 +9,12 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 
-	"github.com/gin-gonic/gin"
+	"github.com/julienschmidt/httprouter"
 )
 
 var html = template.New("")
@@ -46,42 +49,38 @@ func (a *annotator) initTodo() {
 
 // Make an HTTP handler for a.
 func (a *annotator) makeHandler() http.Handler {
-	if !debug {
-		gin.SetMode(gin.ReleaseMode)
-	}
+	r := httprouter.New()
 
-	r := gin.Default()
-	r.SetHTMLTemplate(html)
+	r.Handler("GET", "/", http.RedirectHandler("/ui/", http.StatusPermanentRedirect))
 
-	r.GET("/", a.home)
-	r.GET("/annotate/", a.annotateRandom)
-	r.GET("/annotate/:index/", a.annotateHTML)
-	r.POST("/annotate/:index/save", a.postAnswer)
 	r.GET("/dump/", a.dump)
-	r.GET("/save/", func(c *gin.Context) { a.save(c) })
+	r.GET("/save/", a.save)
 
 	r.GET("/api/item/:index", a.getItem)
 	r.PUT("/api/item/:index", a.putAnswer)
 	r.GET("/api/randomindex", a.randomIndex)
+	r.GET("/api/statistics", a.statistics)
+
+	r.GET("/ui/*path", ui)
 
 	return r
 }
 
-func (a *annotator) dump(c *gin.Context) {
+func (a *annotator) dump(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
-	c.JSON(http.StatusOK, a.items)
+	writeJSON(w, a.items)
 }
 
-func (a *annotator) save(c *gin.Context) {
+func (a *annotator) save(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	err := a.saveLocked()
 	switch err {
 	case nil:
-		c.String(http.StatusOK, "Successfully saved to %q", a.path)
+		fmt.Fprintf(w, "Successfully saved to %q", a.path)
 	default:
-		c.String(http.StatusInternalServerError,
-			"Error saving to %q: %v", a.path, err)
+		http.Error(w, fmt.Sprintf("Error saving to %q: %v", a.path, err),
+			http.StatusInternalServerError)
 	}
 }
 
@@ -94,143 +93,56 @@ func (a *annotator) saveLocked() error {
 
 // Gets the "index" param from c as an integer and checks whether it is
 // in-bounds for items. Otherwise, returns -1 after rendering an error message.
-func (a *annotator) getIndex(c *gin.Context) int {
-	idxparam := c.Param("index")
+func (a *annotator) getIndex(w http.ResponseWriter, ps httprouter.Params) int {
+	idxparam := ps.ByName("index")
 	i, err := strconv.Atoi(idxparam)
 
 	if err != nil || i < 0 || i >= len(a.items) {
-		c.String(http.StatusNotFound, "invalid index %q", idxparam)
+		http.Error(w, fmt.Sprintf("invalid index %q", idxparam), http.StatusNotFound)
 		return -1
 	}
 	return i
 }
 
-func (a *annotator) home(c *gin.Context) {
+func (a *annotator) statistics(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	a.mu.RLock()
-	numTodo := a.todo.Len()
+	todo := a.todo.Len()
+	total := len(a.items)
 	a.mu.RUnlock()
 
-	c.HTML(http.StatusOK, "home", struct{ Todo, Total int }{
-		Todo:  numTodo,
-		Total: len(a.items),
+	writeJSON(w, struct {
+		Todo int `json:"todo"`
+		Done int `json:"done"`
+	}{
+		Todo: todo,
+		Done: total - todo,
 	})
 }
 
-func init() {
-	// Wants a struct{ Todo, Total int } as argument.
-	template.Must(html.New("home").Parse(`<html>
-<head><title>Annotator</title></head>
-<body>
-	<div>To do: {{ .Todo }} items out of {{ .Total }} left to annotate.</div>
-	<div><a href="/annotate/">Annotate random</a></div>
-</body>
-</html>`))
-}
-
-func (a *annotator) getItem(c *gin.Context) {
-	i := a.getIndex(c)
+func (a *annotator) getItem(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	i := a.getIndex(w, ps)
 	if i == -1 {
 		return
 	}
 
-	c.JSON(http.StatusOK, a.items[i])
+	writeJSON(w, a.items[i])
 }
 
-// Renders the annotation interface for a given index.
-func (a *annotator) annotateHTML(c *gin.Context) {
-	i := a.getIndex(c)
-	if i == -1 {
-		return
-	}
-
-	c.HTML(http.StatusOK, "annotate", a.items[i])
-}
-
-func init() {
-	// Wants an item as argument.
-	template.Must(html.New("annotate").Parse(`<html>
-<head>
-	<title>Annotator</title>
-	<script language="javascript">
-		function enableSave() {
-			document.getElementById('save').disabled = false;
-		}
-	</script>
-</head>
-<body>
-	<div>Input: <strong>{{ .Input }}</strong></div>
-	<form action="save" method="post">
-	{{ range .Candidates }}
-		<div>
-			<input type="radio" name="answer" value="{{ .Id }}" onclick="enableSave()">
-				{{ range .Names }}<em>{{ . }}</em>, {{ end }}
-				<small>(distance {{ .Distance }})</small>
-			</input>
-		</div>
-	{{ end }}
-	<div>
-		<input type="radio" name="answer" value="?" onclick="enableSave()">
-		<em>Not in list</em>
-		</input>
-	</div>
-	<input type="submit" id="save" value="Save" disabled="true"/>
-	</form>
-
-	<div><a href="..">Skip</a> (random other item)</div>
-	<div><a href="/">Home</a>
-</body>
-</html>`))
-}
-
-// Redirects to the annotation page for a random unannotated item.
-func (a *annotator) annotateRandom(c *gin.Context) {
-	i := a.todo.At(rand.Intn(a.todo.Len()))
-	c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/annotate/%d/", i))
-}
-
-func (a *annotator) randomIndex(c *gin.Context) {
+func (a *annotator) randomIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	a.mu.RLock()
 	i := rand.Intn(a.todo.Len())
 	a.mu.RUnlock()
 
-	c.JSON(http.StatusOK, i)
+	writeJSON(w, i)
 }
 
-func (a *annotator) postAnswer(c *gin.Context) {
-	i := a.getIndex(c)
+func (a *annotator) putAnswer(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	i := a.getIndex(w, ps)
 	if i == -1 {
 		return
 	}
 
-	answer := c.PostForm("answer")
-	if answer == "" {
-		c.String(http.StatusBadRequest, "No answer in POST data")
-		return
-	}
-
-	done, err := a.setGolden(i, answer)
-	if err != nil {
-		c.String(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	c.HTML(http.StatusOK, "postanswer", struct {
-		Answer      string
-		Done, Total int
-	}{
-		Answer: answer,
-		Done:   done,
-		Total:  len(a.items),
-	})
-}
-
-func (a *annotator) putAnswer(c *gin.Context) {
-	i := a.getIndex(c)
-	if i == -1 {
-		return
-	}
-
-	answer, err := ioutil.ReadAll(c.Request.Body)
+	answer, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Print(err)
 		return
@@ -238,11 +150,11 @@ func (a *annotator) putAnswer(c *gin.Context) {
 
 	_, err = a.setGolden(i, string(answer))
 	if err != nil {
-		c.String(http.StatusBadRequest, err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	c.Status(http.StatusOK)
+	w.WriteHeader(http.StatusOK)
 }
 
 // Stores the given answer for the i'th item in a.
@@ -263,14 +175,29 @@ func (a *annotator) setGolden(i int, answer string) (done int, err error) {
 	return
 }
 
-func init() {
-	// Wants a struct{Answer string; Done, Total int} as argument.
-	template.Must(html.New("postanswer").Parse(`<html>
-<head><title>Save</title></head>
-<body>
-	<div>Successfully saved answer: <strong>{{ .Answer }}.</div>
-	<div>{{ .Done }} out of {{ .Total }} done.</div>
-	<div><a href="..">Continue</a></div>
-</body>
-</html>`))
+func writeJSON(w http.ResponseWriter, x interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	err := json.NewEncoder(w).Encode(x)
+	if err != nil {
+		log.Print(err)
+	}
+}
+
+// Serve UI components. Any path that does not resolve to a file inside s.uiDir
+// serves index.html instead, so the React router can take care of it.
+//
+// Roughly equivalent to the .htaccess rules
+//
+//      RewriteCond %{REQUEST_FILENAME} !-f
+//      RewriteRule ^ index.html [QSA,L]
+func ui(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	path := httprouter.CleanPath(ps.ByName("path"))
+
+	if path != "/favicon.png" && !strings.HasPrefix(path, "/static/") {
+		path = "/index.html"
+	}
+	http.ServeFile(w, r, filepath.Join("ui", path))
+	return
 }
