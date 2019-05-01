@@ -2,6 +2,10 @@ import config from "../config";
 
 class Resources {
 
+    public static getStatistics = () => {
+        return fetch(`${config.HOST}${config.API}/statistics`);
+    };
+
     public static getRandomIndex = () => {
         return fetch(`${config.HOST}${config.API}/randomindex`);
     };

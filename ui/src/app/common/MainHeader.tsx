@@ -14,7 +14,7 @@ class MainHeader extends React.Component<any, any> {
                 <h1><Link to="/">HiTimeP</Link></h1>
                 <div className="main-nav text-center">
                     <Link className="nav-item" to={"/home/"}>home</Link>
-                    <Link className="nav-item" to={"/rate/"}>annotate</Link>
+                    <Link className="nav-item" to={"/annotate/"}>annotate</Link>
                 </div>
             </div>
         );

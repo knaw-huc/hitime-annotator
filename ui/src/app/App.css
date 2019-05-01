@@ -2,3 +2,7 @@ h1, h2 {
   padding-top: 1em;
   text-align: center;
 }
+
+.fa-sm {
+  font-size:0.63em;
+}

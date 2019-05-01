@@ -1,6 +1,6 @@
 import * as React from "react";
 import {Redirect, Route, Switch, withRouter} from "react-router-dom";
-import RatePage from "./rate/RatePage";
+import AnnotatePage from "./annotate/AnnotatePage";
 import HomePage from "./home/HomePage";
 
 class Routes extends React.Component<any, any> {
@@ -17,7 +17,7 @@ class Routes extends React.Component<any, any> {
             <Switch>
                 <Redirect exact from="/" to="/home/"/>
                 <Route exact path='/home' component={HomePage} key={pathname}/>
-                <Route exact path='/rate/' component={RatePage} key={Math.random()}/>
+                <Route exact path='/annotate/' component={AnnotatePage} key={Math.random()}/>
             </Switch>
         );
     }
