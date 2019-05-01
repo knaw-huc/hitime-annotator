@@ -15,8 +15,8 @@ class Routes extends React.Component<any, any> {
 
         return (
             <Switch>
-                <Redirect exact from="/" to="/rate/"/>
-                <Route exact path='/' component={HomePage} key={pathname}/>
+                <Redirect exact from="/" to="/home/"/>
+                <Route exact path='/home' component={HomePage} key={pathname}/>
                 <Route exact path='/rate/' component={RatePage} key={Math.random()}/>
             </Switch>
         );
