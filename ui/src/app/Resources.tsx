@@ -2,7 +2,7 @@ import config from "../config";
 
 class Resources {
 
-    public static getStatistics = () => {
+    public static getStats = () => {
         return fetch(`${config.HOST}${config.API}/statistics`);
     };
 
@@ -23,6 +23,15 @@ class Resources {
             body: annotation
         });
     };
+
+    public static getDownload = () => {
+        return fetch(`${config.HOST}${config.API}/dump`);
+    };
+
+    public static save = () => {
+        return fetch(`${config.HOST}${config.API}/save`);
+    };
+
 
 }
 

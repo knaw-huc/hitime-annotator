@@ -4,7 +4,6 @@ import {Card, CardHeader} from "reactstrap";
 import Resources from "../Resources";
 import {withRouter} from "react-router";
 import LoadingPage from "../common/LoadingPage";
-import InfoBox from "../common/InfoBox";
 import InfoPage from "../common/InfoPage";
 
 class AnnotatePage extends React.Component<any, any> {
@@ -34,12 +33,12 @@ class AnnotatePage extends React.Component<any, any> {
     }
 
     private handleSkip = () => {
-        this.props.history.push('/rate/');
+        this.props.history.push('/annotate/');
     };
 
     private handleRating = () => {
         Resources.putAnnotation(this.state.index, this.state.checked).then(() => {
-            this.props.history.push('/rate/');
+            this.props.history.push('/annotate/');
         });
     };
 
