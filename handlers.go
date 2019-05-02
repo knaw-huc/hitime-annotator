@@ -53,9 +53,8 @@ func (a *annotator) makeHandler() http.Handler {
 
 	r.Handler("GET", "/", http.RedirectHandler("/ui/", http.StatusPermanentRedirect))
 
-	r.GET("/dump/", a.dump)
-	r.GET("/save/", a.save)
-
+	r.GET("/api/dump", a.dump)
+	r.GET("/api/save", a.save)
 	r.GET("/api/item/:index", a.getItem)
 	r.PUT("/api/item/:index", a.putAnswer)
 	r.GET("/api/randomindex", a.randomIndex)
@@ -77,7 +76,7 @@ func (a *annotator) save(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 	err := a.saveLocked()
 	switch err {
 	case nil:
-		fmt.Fprintf(w, "Successfully saved to %q", a.path)
+		w.WriteHeader(http.StatusOK)
 	default:
 		http.Error(w, fmt.Sprintf("Error saving to %q: %v", a.path, err),
 			http.StatusInternalServerError)
