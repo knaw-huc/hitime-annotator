@@ -30,7 +30,7 @@ class HomePage extends React.Component<any, any> {
     private onSave() {
         Resources
             .save()
-            .then(() => this.setState({info: "annotated entities are succesfully saved"}))
+            .then(() => this.setState({info: "Annotated entities are succesfully saved"}))
             .catch(() => this.setState({error: "Could not save"}));
     }
 
@@ -42,10 +42,10 @@ class HomePage extends React.Component<any, any> {
                     data.text().then((txt) => {
                         const blob = new Blob([txt], {type: " application/json;charset=utf-8"});
                         FileSaver.saveAs(blob, "dump.json");
-                        this.setState({loading: false, info: "annotated entities downloaded as dump.json"})
+                        this.setState({loading: false, info: "Annotated entities downloaded as dump.json"})
                     });
                 })
-                .catch(() => this.setState({error: "Could not save"}));
+                .catch(() => this.setState({loading: false, error: "Could not download"}));
         });
     }
 
