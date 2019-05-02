@@ -49,7 +49,7 @@ func main() {
 	}
 
 	<-idleClosed
-	err = a.saveLocked()
+	err = a.lockAndSave()
 	if err != nil {
 		log.Fatal(err)
 	}

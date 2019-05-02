@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -23,8 +24,10 @@ var html = template.New("")
 type annotator struct {
 	items []item
 	path  string       // path of file read from, or ""
-	mu    sync.RWMutex // protects todo
+	mu    sync.RWMutex // protects todo, lastChange and lastSave
 	todo  intset       // indices of items not yet annotated
+
+	lastChange, lastSave time.Time // timestamps for periodic saving goroutine
 }
 
 func newAnnotator(path string) (a *annotator, err error) {
@@ -73,7 +76,7 @@ func (a *annotator) dump(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 }
 
 func (a *annotator) save(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	err := a.saveLocked()
+	err := a.lockAndSave()
 	switch err {
 	case nil:
 		w.WriteHeader(http.StatusOK)
@@ -83,11 +86,36 @@ func (a *annotator) save(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 	}
 }
 
-func (a *annotator) saveLocked() error {
-	log.Printf("dumping to %q", a.path)
+func (a *annotator) lockAndSave() error {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
-	return writeItems(a.path, a.items)
+	return a.saveLocked()
+}
+
+func (a *annotator) saveLocked() error {
+	log.Printf("saving to %q", a.path)
+	if err := writeItems(a.path, a.items); err != nil {
+		return err
+	}
+
+	a.lastSave = time.Now()
+	return nil
+}
+
+func (a *annotator) savePeriodically() {
+	for range time.NewTicker(time.Minute).C {
+		var err error
+
+		a.mu.RLock()
+		if a.lastChange.After(a.lastSave) {
+			err = a.saveLocked()
+		}
+		a.mu.RUnlock()
+
+		if err != nil {
+			log.Print(err)
+		}
+	}
 }
 
 // Gets the "index" param from c as an integer and checks whether it is
@@ -169,7 +197,9 @@ func (a *annotator) setGolden(i int, answer string) (done int, err error) {
 		err = errors.New("already answered")
 		return
 	}
+
 	a.items[i].Golden = answer
+	a.lastChange = time.Now()
 	done++
 	return
 }
