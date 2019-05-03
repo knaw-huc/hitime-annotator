@@ -63,6 +63,9 @@ type item struct {
 
 	// Golden is the id of the true answer, "" for not yet assessed, "?" for unknown.
 	Golden string `json:"golden,omitempty"`
+
+	Type   string `json:"type,omitempty"`   // "pers" or "corp"
+	Method string `json:"method,omitempty"` // algorithm/distance metric
 }
 
 type candidate struct {
