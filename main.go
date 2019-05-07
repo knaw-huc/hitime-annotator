@@ -58,6 +58,7 @@ func main() {
 // An item is an input to be annotated, its candidates, and optionally
 // its gold standard.
 type item struct {
+	Id         string      `json:"id,omitempty"` // identifier
 	Input      string      `json:"input"`
 	Candidates []candidate `json:"candidates"`
 
