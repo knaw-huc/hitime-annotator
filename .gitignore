@@ -1,6 +1,7 @@
 hitime-annotator
 /data
 *.json.gz
+scripts
 
 # UI:
 node_modules
