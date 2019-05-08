@@ -76,23 +76,23 @@ class HomePage extends React.Component<any, any> {
                         </Link>
                     </li>
                     <li className="list-group-item">
-                        Save annotated entities to local hard drive
+                        Force server side commit of entities
                         <button
                             onClick={() => this.onSave()}
                             className="btn btn-success btn-sm float-right"
                         >
-                            save
+                            commit
                             &nbsp;
                             <i className="fa fa-save"/>
                         </button>
                     </li>
                     <li className="list-group-item">
-                        View json-dump of annotated entities
+                        Download JSON export of all entities
                         <button
                             onClick={() => this.onDownload()}
                             className="btn btn-success btn-sm float-right"
                         >
-                            view
+                            download
                             &nbsp;
                             <i className="fa fa-download"/>
                         </button>
