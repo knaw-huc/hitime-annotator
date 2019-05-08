@@ -14,7 +14,12 @@ RUN CGO_ENABLED=0 go install -ldflags="-s" .
 FROM node:11-alpine as buildui
 
 WORKDIR /hitime
-ENV REACT_APP_HOST=http://localhost:8080
+
+# Setup default REACT_APP_HOST for use on localhost
+# To override, use "--build-arg DEPLOY_URL=<value>"
+ARG DEPLOY_URL=http://localhost:8080
+ENV REACT_APP_HOST=$DEPLOY_URL
+
 COPY ui/package.json .
 COPY ui/package-lock.json .
 COPY ui/tsconfig.json .
