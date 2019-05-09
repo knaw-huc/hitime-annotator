@@ -1,6 +1,6 @@
 import * as React from "react";
 import Page from "../common/Page";
-import {Card, CardHeader} from "reactstrap";
+import {Card, CardBody, CardHeader} from "reactstrap";
 import Resources from "../Resources";
 import {withRouter} from "react-router";
 import LoadingPage from "../common/LoadingPage";
@@ -24,7 +24,7 @@ class AnnotatePage extends React.Component<any, any> {
                 const index = parseInt(text);
                 Resources.getItem(index).then((indexResponse) => {
                     indexResponse.json().then((json) => {
-                        json.candidates.push({id: '?', names: 'Niet in de lijst', distance: 'n.v.t.'});
+                        json.candidates.push({id: '?', names: 'Niet in lijst', distance: 'n.v.t.'});
                         this.setState({index, itemWithSuggestions: json, loading: false});
                     });
                 }).catch(() => this.setState({loading: false, error: "Could not get new item"}))
@@ -47,7 +47,7 @@ class AnnotatePage extends React.Component<any, any> {
             return <LoadingPage/>;
 
         if (this.state.error)
-            return <InfoPage msg={this.state.error} type="warning" />;
+            return <InfoPage msg={this.state.error} type="warning"/>;
 
         return <ul className="list-group mt-3">
             {this.state.itemWithSuggestions.candidates.map((c: any, i: number) => {
@@ -74,7 +74,7 @@ class AnnotatePage extends React.Component<any, any> {
                             htmlFor={`name-${c.id}`}
                         >
                             <span className="text-primary">{names}</span>
-                            <br />
+                            <br/>
                             <small className="text-secondary">Afstand: {c.distance}</small>
                         </label>
                     </div>
@@ -87,7 +87,7 @@ class AnnotatePage extends React.Component<any, any> {
         if (this.state.loading)
             return <LoadingPage/>;
         if (this.state.error)
-            return <InfoPage msg={this.state.error} type="warning" />
+            return <InfoPage msg={this.state.error} type="warning"/>
 
         return (
             <Page>
@@ -96,6 +96,24 @@ class AnnotatePage extends React.Component<any, any> {
                     <CardHeader>
                         <strong>{this.state.itemWithSuggestions.input}</strong>
                     </CardHeader>
+                    <CardBody>
+                        <div className="input-group mb-3">
+                            <div className="input-group-prepend">
+                                <span
+                                    className="input-group-text"
+                                    id="context-id"
+                                >
+                                    Context ID
+                                </span>
+                            </div>
+                            <input
+                                type="text"
+                                className="form-control"
+                                aria-describedby="context-id"
+                                value={this.state.itemWithSuggestions.id}
+                            />
+                        </div>
+                    </CardBody>
                 </Card>
                 {this.renderSuggestions()}
                 <div className="rate-btns float-right mt-3 mb-3">
