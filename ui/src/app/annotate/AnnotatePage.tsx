@@ -24,7 +24,7 @@ class AnnotatePage extends React.Component<any, any> {
                 const index = parseInt(text);
                 Resources.getItem(index).then((indexResponse) => {
                     indexResponse.json().then((json) => {
-                        json.candidates.push({id: '?', names: 'Niet in lijst', distance: 'n.v.t.'});
+                        json.candidates.push({id: '?', names: 'Niet in de lijst', distance: 'n.v.t.'});
                         this.setState({index, itemWithSuggestions: json, loading: false});
                     });
                 }).catch(() => this.setState({loading: false, error: "Could not get new item"}))
@@ -51,6 +51,11 @@ class AnnotatePage extends React.Component<any, any> {
 
         return <ul className="list-group mt-3">
             {this.state.itemWithSuggestions.candidates.map((c: any, i: number) => {
+
+                let names = Array.isArray(c.names)
+                    ? c.names.join(', ')
+                    : c.names;
+
                 return <li
                     key={i}
                     className="list-group-item list-group-item-action"
@@ -68,7 +73,7 @@ class AnnotatePage extends React.Component<any, any> {
                             className="custom-control-label w-100"
                             htmlFor={`name-${c.id}`}
                         >
-                            <span className="text-primary">{c.names}</span>
+                            <span className="text-primary">{names}</span>
                             <br />
                             <small className="text-secondary">Afstand: {c.distance}</small>
                         </label>
