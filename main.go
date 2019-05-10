@@ -26,6 +26,8 @@ func main() {
 		Handler: a.makeHandler(),
 	}
 
+	go a.savePeriodically()
+
 	// idleClosed is closed after srv.Shutdown has returned.
 	// At that point, all idle connections have been closed and we can
 	// terminate the program.

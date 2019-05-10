@@ -103,7 +103,7 @@ func (a *annotator) saveLocked() error {
 }
 
 func (a *annotator) savePeriodically() {
-	for range time.NewTicker(time.Minute).C {
+	for range time.NewTicker(5 * time.Minute).C {
 		var err error
 
 		a.mu.RLock()
