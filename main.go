@@ -69,6 +69,9 @@ type item struct {
 
 	Type   string `json:"type,omitempty"`   // "pers" or "corp"
 	Method string `json:"method,omitempty"` // algorithm/distance metric
+
+	// Whether Input occurred in a controlaccess element.
+	ControlAccess bool `json:"controlaccess,omitempty"`
 }
 
 type candidate struct {
