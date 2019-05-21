@@ -222,15 +222,7 @@ func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
-	// clamp request params to frequency mapping bounds
-	upto := from + size // optimistic init
-	if from >= len(a.byFreq) {
-		from = len(a.byFreq) - 1 // max index
-		upto = from
-	} else if from+size > len(a.byFreq) {
-		upto = len(a.byFreq)
-	}
-
+	from, upto := clamp(from, size, len(a.byFreq))
 	keys := a.byFreq[from:upto]
 	freq := make([]inputFreq, len(keys))
 	for i, k := range keys {
@@ -241,14 +233,25 @@ func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprou
 }
 
 func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	uparams := r.URL.Query()
+	fromParam := naturalValue(w, uparams, "from", 0)
+	if fromParam == -1 {
+		return
+	}
+
+	sizeParam := naturalValue(w, uparams, "size", 10)
+	if sizeParam == -1 {
+		return
+	}
+
 	type occ struct {
 		Id            int    `json:"id"`
 		Source        string `json:"source"`
 		ControlAccess bool   `json:"controlAccess"`
 	}
 
-	input := ps.ByName("term")
-	hits := a.byInput[input]
+	termParam := ps.ByName("term")
+	hits := a.byInput[termParam]
 	if hits == nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -278,37 +281,35 @@ func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httproute
 		return false
 	})
 
-	uparams := r.URL.Query()
-	from := naturalValue(w, uparams, "from", 0)
-	if from == -1 {
-		return
-	}
-
-	size := naturalValue(w, uparams, "size", 10)
-	if size == -1 {
-		return
-	}
-
-	// clamp request params to frequency mapping bounds
-	upto := from + size // optimistic init
-	if from >= len(occurs) {
-		from = len(occurs) - 1 // max index
-		upto = from
-	} else if from+size > len(occurs) {
-		upto = len(occurs)
-	}
+	from, upto := clamp(fromParam, sizeParam, len(occurs))
 
 	writeJSON(w, struct {
-		Term   string `json:"term"`
+		Term   string `json:"@term"`
+		From   int    `json:"@from"`
+		Size   int    `json:"@size"`
 		Total  int    `json:"total"`
 		Tally  int    `json:"inControlAccess"`
 		Occurs []occ  `json:"occurences"`
 	}{
-		input,
+		termParam,
+		fromParam,
+		sizeParam,
 		len(occurs),
 		controlAccessTally,
 		occurs[from:upto],
 	})
+}
+
+func clamp(low, size, max int) (from, upto int) {
+	from = low
+	upto = from + size // optimistic init
+	if from >= max {
+		from = max - 1 // max index
+		upto = from
+	} else if from+size > max {
+		upto = max
+	}
+	return
 }
 
 func (a *annotator) randomIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
