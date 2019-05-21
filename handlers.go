@@ -91,11 +91,12 @@ func (a *annotator) makeHandler() http.Handler {
 
 	r.GET("/api/dump", a.dump)
 	r.GET("/api/save", a.save)
-	r.GET("/api/terms", a.listTerms)
 	r.GET("/api/item/:index", a.getItem)
 	r.PUT("/api/item/:index", a.putAnswer)
 	r.GET("/api/randomindex", a.randomIndex)
 	r.GET("/api/statistics", a.statistics)
+	r.GET("/api/terms", a.listTerms)
+	r.GET("/api/terms/:term", a.getTerm)
 
 	r.GET("/ui/*path", ui)
 
@@ -237,6 +238,57 @@ func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	writeJSON(w, freq)
+}
+
+func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	type score struct {
+		Id            int    `json:"id"`
+		Source        string `json:"source"`
+		ControlAccess bool   `json:"controlAccess"`
+	}
+
+	input := ps.ByName("term")
+	hits := a.byInput[input]
+	if hits == nil {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	controlAccessTally := 0
+	result := make([]score, len(hits))
+	for i, index := range hits {
+		item := a.items[index]
+		if item.ControlAccess {
+			controlAccessTally++
+		}
+		result[i] = score{
+			Id:            index,
+			Source:        item.Id,
+			ControlAccess: item.ControlAccess,
+		}
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].ControlAccess == result[j].ControlAccess {
+			return result[i].Id < result[j].Id
+		}
+		if result[i].ControlAccess {
+			return true
+		}
+		return false
+	})
+
+	writeJSON(w, struct {
+		Term   string  `json:"term"`
+		Found  int     `json:"found"`
+		Tally  int     `json:"controlAccessFound"`
+		Result []score `json:"occurences"`
+	}{
+		input,
+		len(result),
+		controlAccessTally,
+		result,
+	})
 }
 
 func (a *annotator) randomIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
