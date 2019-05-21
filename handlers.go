@@ -9,7 +9,9 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,12 +24,19 @@ var html = template.New("")
 
 // An annotator holds a collection of items, some annotated, some not yet.
 type annotator struct {
-	items []item
-	path  string       // path of file read from, or ""
-	mu    sync.RWMutex // protects todo, lastChange and lastSave
-	todo  intset       // indices of items not yet annotated
+	items   []item
+	byInput map[string][]int // item indices with same input
+	byFreq  []string         // input strings ordered by freq desc
+	path    string           // path of file read from, or ""
+	mu      sync.RWMutex     // protects todo, lastChange and lastSave
+	todo    intset           // indices of items not yet annotated
 
 	lastChange, lastSave time.Time // timestamps for periodic saving goroutine
+}
+
+type inputFreq struct {
+	Key  string `json:"key"`
+	Freq int    `json:"freq"`
 }
 
 func newAnnotator(path string) (a *annotator, err error) {
@@ -37,6 +46,12 @@ func newAnnotator(path string) (a *annotator, err error) {
 	}
 	a = &annotator{items: items, path: path}
 	a.initTodo()
+	a.groupByFreqDesc()
+
+	for _, k := range a.byFreq {
+		fmt.Printf("%s occurs %d times\n", k, len(a.byInput[k]))
+	}
+
 	return
 }
 
@@ -50,6 +65,29 @@ func (a *annotator) initTodo() {
 	}
 }
 
+func (a *annotator) groupByFreqDesc() {
+	// group all item indices by their input string
+	a.byInput = make(map[string][]int, len(a.items)/2) // guestimate # of unique input strings
+	for i, it := range a.items {
+		a.byInput[it.Input] = append(a.byInput[it.Input], i)
+	}
+
+	fmt.Printf("Found %d unique input strings\n", len(a.byInput))
+
+	// order all unique keys from frequency map into separate slice
+	keys := make([]string, len(a.byInput))
+	i := 0
+	for k := range a.byInput {
+		keys[i] = k
+		i++
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return len(a.byInput[keys[i]]) > len(a.byInput[keys[j]])
+	})
+
+	a.byFreq = keys
+}
+
 // Make an HTTP handler for a.
 func (a *annotator) makeHandler() http.Handler {
 	r := httprouter.New()
@@ -58,6 +96,7 @@ func (a *annotator) makeHandler() http.Handler {
 
 	r.GET("/api/dump", a.dump)
 	r.GET("/api/save", a.save)
+	r.GET("/api/terms", a.listTerms)
 	r.GET("/api/item/:index", a.getItem)
 	r.PUT("/api/item/:index", a.putAnswer)
 	r.GET("/api/randomindex", a.randomIndex)
@@ -131,6 +170,21 @@ func (a *annotator) getIndex(w http.ResponseWriter, ps httprouter.Params) int {
 	return i
 }
 
+// Returns -1 on error.
+func intValue(w http.ResponseWriter, v url.Values, key string, def int) int {
+	s := v.Get(key)
+	if s == "" {
+		return def
+	}
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "invalid %s parameter: %q", key, s)
+		return -1
+	}
+	return i
+}
+
 func (a *annotator) statistics(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	a.mu.RLock()
 	todo := a.todo.Len()
@@ -153,6 +207,36 @@ func (a *annotator) getItem(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 
 	writeJSON(w, a.items[i])
+}
+
+func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	uparams := r.URL.Query()
+	from := intValue(w, uparams, "from", 0)
+	if from == -1 {
+		return
+	}
+
+	size := intValue(w, uparams, "size", 10)
+	if size == -1 {
+		return
+	}
+
+	// clamp request params to frequency mapping bounds
+	upto := from + size // optimistic init
+	if from >= len(a.byFreq) {
+		from = len(a.byFreq) - 1 // max index
+		upto = from
+	} else if from+size > len(a.byFreq) {
+		upto = len(a.byFreq)
+	}
+
+	keys := a.byFreq[from:upto]
+	freq := make([]inputFreq, len(keys))
+	for i, k := range keys {
+		freq[i] = inputFreq{Key: k, Freq: len(a.byInput[k])}
+	}
+
+	writeJSON(w, freq)
 }
 
 func (a *annotator) randomIndex(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
