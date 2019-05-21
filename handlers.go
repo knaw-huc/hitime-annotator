@@ -166,7 +166,7 @@ func (a *annotator) getIndex(w http.ResponseWriter, ps httprouter.Params) int {
 }
 
 // Returns -1 on error.
-func intValue(w http.ResponseWriter, v url.Values, key string, def int) int {
+func naturalValue(w http.ResponseWriter, v url.Values, key string, def int) int {
 	s := v.Get(key)
 	if s == "" {
 		return def
@@ -175,6 +175,11 @@ func intValue(w http.ResponseWriter, v url.Values, key string, def int) int {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprintf(w, "invalid %s parameter: %q", key, s)
+		return -1
+	}
+	if i < 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "parameter %s should be >= 0, was: %d", key, i)
 		return -1
 	}
 	return i
@@ -206,12 +211,12 @@ func (a *annotator) getItem(w http.ResponseWriter, r *http.Request, ps httproute
 
 func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	uparams := r.URL.Query()
-	from := intValue(w, uparams, "from", 0)
+	from := naturalValue(w, uparams, "from", 0)
 	if from == -1 {
 		return
 	}
 
-	size := intValue(w, uparams, "size", 10)
+	size := naturalValue(w, uparams, "size", 10)
 	if size == -1 {
 		return
 	}
