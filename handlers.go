@@ -241,7 +241,7 @@ func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprou
 }
 
 func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	type score struct {
+	type occ struct {
 		Id            int    `json:"id"`
 		Source        string `json:"source"`
 		ControlAccess bool   `json:"controlAccess"`
@@ -255,39 +255,59 @@ func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httproute
 	}
 
 	controlAccessTally := 0
-	result := make([]score, len(hits))
+	occurs := make([]occ, len(hits))
 	for i, index := range hits {
 		item := a.items[index]
 		if item.ControlAccess {
 			controlAccessTally++
 		}
-		result[i] = score{
+		occurs[i] = occ{
 			Id:            index,
 			Source:        item.Id,
 			ControlAccess: item.ControlAccess,
 		}
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		if result[i].ControlAccess == result[j].ControlAccess {
-			return result[i].Id < result[j].Id
+	sort.Slice(occurs, func(i, j int) bool {
+		if occurs[i].ControlAccess == occurs[j].ControlAccess {
+			return occurs[i].Id < occurs[j].Id
 		}
-		if result[i].ControlAccess {
+		if occurs[i].ControlAccess {
 			return true
 		}
 		return false
 	})
 
+	uparams := r.URL.Query()
+	from := naturalValue(w, uparams, "from", 0)
+	if from == -1 {
+		return
+	}
+
+	size := naturalValue(w, uparams, "size", 10)
+	if size == -1 {
+		return
+	}
+
+	// clamp request params to frequency mapping bounds
+	upto := from + size // optimistic init
+	if from >= len(occurs) {
+		from = len(occurs) - 1 // max index
+		upto = from
+	} else if from+size > len(occurs) {
+		upto = len(occurs)
+	}
+
 	writeJSON(w, struct {
-		Term   string  `json:"term"`
-		Found  int     `json:"found"`
-		Tally  int     `json:"controlAccessFound"`
-		Result []score `json:"occurences"`
+		Term   string `json:"term"`
+		Total  int    `json:"total"`
+		Tally  int    `json:"inControlAccess"`
+		Occurs []occ  `json:"occurences"`
 	}{
 		input,
-		len(result),
+		len(occurs),
 		controlAccessTally,
-		result,
+		occurs[from:upto],
 	})
 }
 
