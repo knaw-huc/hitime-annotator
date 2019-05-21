@@ -47,11 +47,6 @@ func newAnnotator(path string) (a *annotator, err error) {
 	a = &annotator{items: items, path: path}
 	a.initTodo()
 	a.groupByFreqDesc()
-
-	for _, k := range a.byFreq {
-		fmt.Printf("%s occurs %d times\n", k, len(a.byInput[k]))
-	}
-
 	return
 }
 
@@ -72,7 +67,7 @@ func (a *annotator) groupByFreqDesc() {
 		a.byInput[it.Input] = append(a.byInput[it.Input], i)
 	}
 
-	fmt.Printf("Found %d unique input strings\n", len(a.byInput))
+	log.Printf("%d unique input strings\n", len(a.byInput))
 
 	// order all unique keys from frequency map into separate slice
 	keys := make([]string, len(a.byInput))
