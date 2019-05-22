@@ -91,12 +91,15 @@ func (a *annotator) makeHandler() http.Handler {
 
 	r.GET("/api/dump", a.dump)
 	r.GET("/api/save", a.save)
-	r.GET("/api/item/:index", a.getItem)
-	r.PUT("/api/item/:index", a.putAnswer)
-	r.GET("/api/randomindex", a.randomIndex)
-	r.GET("/api/statistics", a.statistics)
+
+	r.GET("/api/items/:index", a.getItem)
+	r.PUT("/api/items/:index", a.putAnswer)
+
 	r.GET("/api/terms", a.listTerms)
 	r.GET("/api/terms/:term", a.getTerm)
+
+	r.GET("/api/randomindex", a.randomIndex)
+	r.GET("/api/statistics", a.statistics)
 
 	r.GET("/ui/*path", ui)
 

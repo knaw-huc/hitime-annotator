@@ -11,11 +11,11 @@ class Resources {
     };
 
     public static getItem = (index: number) => {
-        return fetch(`${config.HOST}${config.API}/item/${index}`);
+        return fetch(`${config.HOST}${config.API}/items/${index}`);
     };
 
     public static putAnnotation = (index: number, annotation: string) => {
-        return fetch(`${config.HOST}${config.API}/item/${index}`, {
+        return fetch(`${config.HOST}${config.API}/items/${index}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'text/plain',
