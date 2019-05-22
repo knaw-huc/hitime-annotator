@@ -232,7 +232,13 @@ func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprou
 		freq[i] = inputFreq{Key: k, Freq: len(a.byInput[k])}
 	}
 
-	writeJSON(w, freq)
+	writeJSON(w, struct {
+		Total int         `json:"total"`
+		Freqs []inputFreq `json:"frequencies"`
+	}{
+		len(a.byFreq),
+		freq,
+	})
 }
 
 func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
