@@ -23,14 +23,25 @@ class Annotator extends React.Component<AnnotatorProps, any> {
     private getItemWithSuggestions() {
         Resources.getItem(this.props.item).then((indexResponse) => {
             indexResponse.json().then((json) => {
-                json.candidates.push({id: '?', names: 'Niet in lijst', distance: 'n.v.t.'});
-                this.setState({candidates: json.candidates, contextId: json.id, input: json.input, loading: false});
+                let candidates = json.candidates;
+                candidates = this.removeDuplicatesById(candidates);
+                candidates.push({id: '?', names: 'Not in list', distance: 'n.a.'});
+                this.setState({candidates: candidates, contextId: json.id, input: json.input, loading: false});
             });
         }).catch(() => this.setState({loading: false, error: "Could not get new item"}));
 
     }
 
+    private removeDuplicatesById(candidates: any) {
+        return Array
+            .from(new Set(candidates.map((s: any) => s.id)))
+            .map((id: any) => {
+                return candidates.find((c2: any) => c2.id === id)
+            });
+    }
+
     private renderSuggestions() {
+
         return <ul className="list-group mt-3">
             {this.state.candidates.map((c: any, i: number) => {
 

@@ -53,6 +53,15 @@ class HomePage extends React.Component<any, any> {
             <Page>
                 <InfoBox msg={this.state.error} type="warning" onClose={() => this.setState({error: null})}/>
                 <InfoBox msg={this.state.info} type="info" onClose={() => this.setState({info: null})}/>
+
+                <InfoBox msg={<>
+                    From&nbsp;
+                    <span className="badge badge-secondary badge-pill">{total}</span>&nbsp;
+                    items there are&nbsp;
+                    <span className="badge badge-secondary badge-pill">{todo}</span>&nbsp;
+                    left to annotate.
+                </>} type="info"/>
+
                 <ul className="list-group">
                     <li className="list-group-item">
                         View pers- and corpnames:&nbsp;
@@ -66,10 +75,7 @@ class HomePage extends React.Component<any, any> {
                         </Link>
                     </li>
                     <li className="list-group-item">
-                        Annotate next item:&nbsp;
-                        <span className="badge badge-secondary badge-pill">{todo}</span> out of &nbsp;
-                        <span className="badge badge-secondary badge-pill">{total}</span>&nbsp;
-                        items left
+                        Annotate next random item:&nbsp;
                         <Link
                             to="/annotate/"
                             className="btn btn-success btn-sm float-right"

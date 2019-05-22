@@ -44,7 +44,7 @@ class TermItemsPage extends React.Component<any, any> {
                         {t.controlAccess ? <small className="text-secondary"> (control access)</small> : null}
                         <button
                             className="btn btn-success btn-sm float-right"
-                            onClick={() => this.props.history.push(`/`)}
+                            onClick={() => this.props.history.push(`/terms/${this.props.match.params.tid}/items/${t.id}/annotate/`)}
                         >
                             annotate
                             &nbsp;
@@ -68,7 +68,7 @@ class TermItemsPage extends React.Component<any, any> {
 
         return (
             <Page className="term-items">
-                <h2>All items of {this.props.match.params.tid}</h2>
+                <h2>Occurrences of {this.props.match.params.tid}</h2>
                 {this.renderItems()}
                 {/* server is zero- and component one-based: */}
                 <MinimalPagination

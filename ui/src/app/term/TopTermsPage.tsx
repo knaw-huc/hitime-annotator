@@ -3,14 +3,13 @@ import Resources from "../Resources";
 import LoadingPage from "../common/LoadingPage";
 import Page from "../common/Page";
 import MinimalPagination from "../common/MinimalPagination";
-import {Link, withRouter} from "react-router-dom";
+import {withRouter} from "react-router-dom";
 import InfoPage from "../common/InfoPage";
 
 class TopTermsPage extends React.Component<any, any> {
     constructor(props: any, context: any) {
         super(props, context);
         this.state = {
-            loading: true,
             from: 0,
             total: 0,
             size: 10,
