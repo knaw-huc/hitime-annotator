@@ -2,6 +2,7 @@ import * as React from "react";
 import {Redirect, Route, Switch, withRouter} from "react-router-dom";
 import AnnotatePage from "./annotate/AnnotatePage";
 import HomePage from "./home/HomePage";
+import TopTermsPage from "./items/TopTermsPage";
 
 class Routes extends React.Component<any, any> {
     constructor(props: any, context: any) {
@@ -16,8 +17,9 @@ class Routes extends React.Component<any, any> {
         return (
             <Switch>
                 <Redirect exact from="/" to="/home/"/>
-                <Route exact path='/home' component={HomePage} key={pathname}/>
                 <Route exact path='/annotate/' component={AnnotatePage} key={Math.random()}/>
+                <Route exact path='/home/' component={HomePage} key={pathname}/>
+                <Route exact path='/terms/' component={TopTermsPage} key={pathname}/>
             </Switch>
         );
     }
