@@ -233,9 +233,13 @@ func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprou
 	}
 
 	writeJSON(w, struct {
+		From  int         `json:"@from"`
+		Size  int         `json:"@size"`
 		Total int         `json:"total"`
 		Freqs []inputFreq `json:"frequencies"`
 	}{
+		from,
+		size,
 		len(a.byFreq),
 		freq,
 	})
