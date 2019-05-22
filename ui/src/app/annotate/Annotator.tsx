@@ -23,7 +23,6 @@ class Annotator extends React.Component<AnnotatorProps, any> {
     private getItemWithSuggestions() {
         Resources.getItem(this.props.item).then((indexResponse) => {
             indexResponse.json().then((json) => {
-                console.log('json', json);
                 let candidates = json.candidates;
                 candidates = this.removeDuplicatesById(candidates);
                 candidates.push({id: '?', names: 'Not in list', distance: 'n.a.'});

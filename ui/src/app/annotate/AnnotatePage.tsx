@@ -10,6 +10,7 @@ class AnnotatePage extends React.Component<any, any> {
         super(props, context);
         this.state = {
             checked: null,
+            input: null,
             itemWithSuggestions: [],
             error: null
         };
@@ -21,7 +22,16 @@ class AnnotatePage extends React.Component<any, any> {
 
     private handleRating = () => {
         Resources.putAnnotation(this.props.match.params.iid, this.state.checked).then(() => {
-            this.props.history.push(`/terms/${this.props.match.params.tid}/`);
+            let newId = parseInt(this.props.match.params.iid) + 1;
+            Resources.getItem(newId).then((response) => {
+                if (response.ok) {
+                    response.json().then((json) => {
+                        this.props.history.push(`/terms/${json.input}/items/${newId}/annotate`);
+                    });
+                } else {
+                    this.props.history.push(`/terms/`);
+                }
+            }).catch(() => this.setState({loading: false, error: "Checking if annotation exists failed"}));
         }).catch(() => this.setState({loading: false, error: "Could not save new annotation"}));
     };
 
