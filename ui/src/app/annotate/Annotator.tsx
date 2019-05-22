@@ -23,10 +23,17 @@ class Annotator extends React.Component<AnnotatorProps, any> {
     private getItemWithSuggestions() {
         Resources.getItem(this.props.item).then((indexResponse) => {
             indexResponse.json().then((json) => {
+                console.log('json', json);
                 let candidates = json.candidates;
                 candidates = this.removeDuplicatesById(candidates);
                 candidates.push({id: '?', names: 'Not in list', distance: 'n.a.'});
-                this.setState({candidates: candidates, contextId: json.id, input: json.input, loading: false});
+                this.setState({
+                    candidates: candidates,
+                    contextId: json.id,
+                    controlAccess: json.controlaccess,
+                    input: json.input,
+                    loading: false
+                });
             });
         }).catch(() => this.setState({loading: false, error: "Could not get new item"}));
 
@@ -86,6 +93,7 @@ class Annotator extends React.Component<AnnotatorProps, any> {
                 <Card>
                     <CardHeader>
                         <strong>{this.state.input}</strong>
+                        {this.state.controlAccess ? <small className="text-secondary"> (control access)</small> : null}
                     </CardHeader>
                     <CardBody>
                         <div className="input-group mb-3">
