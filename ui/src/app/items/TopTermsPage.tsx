@@ -9,21 +9,22 @@ class TopTermsPage extends React.Component<any, any> {
         super(props, context);
         this.state = {
             loading: true,
-            termPageFrom: 0,
-            termLastPageNumber: 99,
-            termPageSize: 10,
+            from: 0,
+            total: 0,
+            size: 10,
             terms: []
         };
         this.getTopTerms();
     }
 
-    private getTopTerms(from = this.state.termPageFrom, size = this.state.termPageSize) {
+    private getTopTerms(from = this.state.from, size = this.state.size) {
         Resources.getTerms(from, size).then((termsResponse) => {
             termsResponse.json().then((json) => {
                 this.setState({
-                    terms: json,
-                    termPageFrom: from,
-                    termPageSize: size,
+                    terms: json.frequencies,
+                    from: from,
+                    size: size,
+                    total: json.total,
                     loading: false
                 });
             });
@@ -40,7 +41,7 @@ class TopTermsPage extends React.Component<any, any> {
                 >
                     <div className="custom-control custom-radio">
                         <span className="text-primary">{t.key}</span>
-                        <small className="text-secondary">({t.freq}x)</small>
+                        <small className="text-secondary"> ({t.freq}x)</small>
                     </div>
                 </li>;
             })}
@@ -51,8 +52,8 @@ class TopTermsPage extends React.Component<any, any> {
         if (this.state.loading)
             return <LoadingPage/>;
 
-        let size = this.state.termPageSize;
-        let from = this.state.termPageFrom;
+        let size = this.state.size;
+        let from = this.state.from;
 
         return (
             <Page className="top-items">
@@ -61,7 +62,7 @@ class TopTermsPage extends React.Component<any, any> {
                 {/* server is zero- and component one-based: */}
                 <MinimalPagination
                     page={from / size + 1}
-                    lastPage={this.state.termLastPageNumber}
+                    lastPage={Math.ceil(this.state.total / size)}
                     onPrevious={() => this.getTopTerms(from - size)}
                     onNext={() => this.getTopTerms(from + size)}
                 />
