@@ -57,7 +57,7 @@ class AnnotatePage extends React.Component<any, any> {
                         className="btn btn-secondary mr-3"
                         onClick={this.handleSkip}
                     >
-                        Overslaan
+                        skip
                         &nbsp;
                         <i className="fa fa-chevron-right"/>
                     </button>
@@ -66,7 +66,7 @@ class AnnotatePage extends React.Component<any, any> {
                         disabled={this.state.checked === null}
                         onClick={this.handleRating}
                     >
-                        Opslaan
+                        save
                         &nbsp;
                         <i className="fa fa-chevron-right"/>
                     </button>

@@ -27,13 +27,6 @@ class HomePage extends React.Component<any, any> {
         });
     }
 
-    private onSave() {
-        Resources
-            .save()
-            .then(() => this.setState({info: "Annotated entities are succesfully saved"}))
-            .catch(() => this.setState({error: "Could not save"}));
-    }
-
     private onDownload() {
         this.setState({loading: true}, () => {
             Resources
@@ -62,6 +55,17 @@ class HomePage extends React.Component<any, any> {
                 <InfoBox msg={this.state.info} type="info" onClose={() => this.setState({info: null})}/>
                 <ul className="list-group">
                     <li className="list-group-item">
+                        View pers- and corpnames:&nbsp;
+                        <Link
+                            to="/terms/"
+                            className="btn btn-success btn-sm float-right"
+                        >
+                            view
+                            &nbsp;
+                            <i className="fa fa-chevron-right"/>
+                        </Link>
+                    </li>
+                    <li className="list-group-item">
                         Annotate next item:&nbsp;
                         <span className="badge badge-secondary badge-pill">{todo}</span> out of &nbsp;
                         <span className="badge badge-secondary badge-pill">{total}</span>&nbsp;
@@ -74,17 +78,6 @@ class HomePage extends React.Component<any, any> {
                             &nbsp;
                             <i className="fa fa-chevron-right"/>
                         </Link>
-                    </li>
-                    <li className="list-group-item">
-                        Force server side commit of entities
-                        <button
-                            onClick={() => this.onSave()}
-                            className="btn btn-success btn-sm float-right"
-                        >
-                            commit
-                            &nbsp;
-                            <i className="fa fa-save"/>
-                        </button>
                     </li>
                     <li className="list-group-item">
                         Download JSON export of all entities

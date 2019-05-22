@@ -2,8 +2,8 @@ import * as React from "react";
 import {Redirect, Route, Switch, withRouter} from "react-router-dom";
 import AnnotatePage from "./annotate/AnnotatePage";
 import HomePage from "./home/HomePage";
-import TopTermsPage from "./items/TopTermsPage";
-import TermItemsPage from "./items/TermItemsPage";
+import TopTermsPage from "./term/TopTermsPage";
+import TermItemsPage from "./term/TermItemsPage";
 
 class Routes extends React.Component<any, any> {
     constructor(props: any, context: any) {

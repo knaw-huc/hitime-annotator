@@ -1,11 +1,12 @@
 import * as React from "react";
+import Resources from "../Resources";
 import LoadingPage from "../common/LoadingPage";
-import InfoPage from "../common/InfoPage";
 import Page from "../common/Page";
 import MinimalPagination from "../common/MinimalPagination";
-import Resources from "../Resources";
+import {Link, withRouter} from "react-router-dom";
+import InfoPage from "../common/InfoPage";
 
-class TermItemsPage extends React.Component<any, any> {
+class TopTermsPage extends React.Component<any, any> {
     constructor(props: any, context: any) {
         super(props, context);
         this.state = {
@@ -13,16 +14,16 @@ class TermItemsPage extends React.Component<any, any> {
             from: 0,
             total: 0,
             size: 10,
-            items: []
+            terms: []
         };
-        this.getTermItems();
+        this.getTopTerms();
     }
 
-    private getTermItems(from = this.state.from, size = this.state.size) {
-        Resources.getTerm(this.props.match.params.tid, from, size).then((termsResponse) => {
+    private getTopTerms(from = this.state.from, size = this.state.size) {
+        Resources.getTerms(from, size).then((termsResponse) => {
             termsResponse.json().then((json) => {
                 this.setState({
-                    items: json.occurences,
+                    terms: json.frequencies,
                     from: from,
                     size: size,
                     total: json.total,
@@ -32,24 +33,21 @@ class TermItemsPage extends React.Component<any, any> {
         }).catch(() => this.setState({loading: false, error: "Could not get terms"}))
     }
 
-    private renderItems() {
+    private renderTerms() {
         return <ul className="list-group mt-3">
-            {this.state.items.map((t: any, i: number) => {
+            {this.state.terms.map((t: any, i: number) => {
                 return <li
                     key={i}
                     className="list-group-item list-group-item-action"
                 >
                     <div className="custom-control custom-radio">
-                        <span className="text-primary">{t.source}</span>
-                        {t.controlAccess
-                            ? <small className="text-secondary"> (control access)</small>
-                            : null
-                        }
+                        <span className="text-primary">{t.key}</span>
+                        <small className="text-secondary"> ({t.freq}x)</small>
                         <button
                             className="btn btn-success btn-sm float-right"
-                            onClick={() => this.props.history.push(`/`)}
+                            onClick={() => this.props.history.push(`/terms/${t.key}/`)}
                         >
-                            Annotate
+                            view
                             &nbsp;
                             <i className="fa fa-chevron-right"/>
                         </button>
@@ -70,19 +68,19 @@ class TermItemsPage extends React.Component<any, any> {
         let from = this.state.from;
 
         return (
-            <Page className="term-items">
-                <h2>All items of {this.props.match.params.tid}</h2>
-                {this.renderItems()}
+            <Page className="top-items">
+                <h2>Persons and Corporations</h2>
+                {this.renderTerms()}
                 {/* server is zero- and component one-based: */}
                 <MinimalPagination
                     page={from / size + 1}
                     lastPage={Math.ceil(this.state.total / size)}
-                    onPrevious={() => this.getTermItems(from - size)}
-                    onNext={() => this.getTermItems(from + size)}
+                    onPrevious={() => this.getTopTerms(from - size)}
+                    onNext={() => this.getTopTerms(from + size)}
                 />
             </Page>
         );
     }
 }
 
-export default TermItemsPage;
+export default withRouter(TopTermsPage);
