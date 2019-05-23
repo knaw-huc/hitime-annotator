@@ -2,8 +2,9 @@ import * as React from "react";
 import Page from "../common/Page";
 import Resources from "../Resources";
 import {withRouter} from "react-router";
-import InfoPage from "../common/InfoPage";
 import Annotator from "./Annotator";
+import LoadingPage from "../common/LoadingPage";
+import InfoBox from "../common/InfoBox";
 
 class AnnotatePage extends React.Component<any, any> {
     constructor(props: any, context: any) {
@@ -36,12 +37,13 @@ class AnnotatePage extends React.Component<any, any> {
     };
 
     render() {
-        if (this.state.error)
-            return <InfoPage msg={this.state.error} type="warning"/>;
+        if (this.state.loading)
+            return <LoadingPage/>;
 
         return (
             <Page>
                 <h2>Annotate</h2>
+                {<InfoBox msg={this.state.error} type="warning" onClose={() => this.setState({error: null})}/>}
                 <Annotator
                     item={this.props.match.params.iid}
                     checked={this.state.checked}

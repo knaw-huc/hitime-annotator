@@ -34,8 +34,9 @@ class HomePage extends React.Component<any, any> {
                 .then((data) => {
                     data.text().then((txt) => {
                         const blob = new Blob([txt], {type: " application/json;charset=utf-8"});
-                        FileSaver.saveAs(blob, "dump.json");
-                        this.setState({loading: false, info: "Annotated entities downloaded as dump.json"})
+                        let filename = "dump.json";
+                        FileSaver.saveAs(blob, filename);
+                        this.setState({loading: false, info: `Annotated entities downloaded as ${filename}`})
                     });
                 })
                 .catch(() => this.setState({loading: false, error: "Could not download"}));
