@@ -13,7 +13,7 @@ import (
 )
 
 func TestReadWriteItems(t *testing.T) {
-	items := []item{
+	occs := []occurrence{
 		{Input: "Foo", Candidates: []candidate{
 			{Id: "1", Names: []string{"Foo", "foo"}},
 		}},
@@ -21,7 +21,7 @@ func TestReadWriteItems(t *testing.T) {
 			{Id: "2", Names: []string{"Bar", "bar"}},
 		}},
 	}
-	const itemsjson = `
+	const occsjson = `
 		{"input": "Foo", "candidates": [{"id": "1", "names": ["Foo", "foo"]}]}
 		{"input": "Bar", "candidates": [{"id": "2", "names": ["Bar", "bar"]}]}
 	`
@@ -34,37 +34,37 @@ func TestReadWriteItems(t *testing.T) {
 
 	// Read.
 	for _, ext := range []string{"", ".gz"} {
-		content := []byte(itemsjson)
+		content := []byte(occsjson)
 		if ext == ".gz" {
 			content = compress(content)
 		}
 
-		path := filepath.Join(dir, "items1"+ext)
+		path := filepath.Join(dir, "occs1"+ext)
 		if err := ioutil.WriteFile(path, content, 0600); err != nil {
 			t.Fatal(err)
 		}
 
-		readAndCheckEquals(t, path, items)
+		readAndCheckEquals(t, path, occs)
 	}
 
 	// Write then read.
 	for _, ext := range []string{"", ".gz"} {
-		path := filepath.Join(dir, "items2"+ext)
-		if err := writeItems(path, items); err != nil {
+		path := filepath.Join(dir, "occs2"+ext)
+		if err := writeFile(path, occs); err != nil {
 			t.Fatal(err)
 		}
-		readAndCheckEquals(t, path, items)
+		readAndCheckEquals(t, path, occs)
 	}
 }
 
-func readAndCheckEquals(t *testing.T, path string, items []item) {
+func readAndCheckEquals(t *testing.T, path string, occs []occurrence) {
 	t.Helper()
-	got, err := readItems(path)
+	got, err := readFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(got, items) {
-		t.Errorf("got %v, wanted %v", got, items)
+	if !reflect.DeepEqual(got, occs) {
+		t.Errorf("got %v, wanted %v", got, occs)
 	}
 }
 
@@ -77,12 +77,12 @@ func compress(p []byte) []byte {
 }
 
 func TestSetGolden(t *testing.T) {
-	items := make([]item, 10000)
-	a := &annotator{items: items}
+	occs := make([]occurrence, 10000)
+	a := &annotator{occs: occs}
 	a.initTodo()
 
 	const nproc = 10
-	batchsize := len(items) / nproc
+	batchsize := len(occs) / nproc
 	var wg sync.WaitGroup
 
 	wg.Add(nproc)
@@ -95,7 +95,7 @@ func TestSetGolden(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if done < 0 || done > len(items) {
+				if done < 0 || done > len(occs) {
 					t.Errorf("invalid number done %d", done)
 				}
 			}
@@ -110,8 +110,8 @@ func TestSetGolden(t *testing.T) {
 		if err == nil || err.Error() != "already answered" {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if done != len(items) {
-			t.Fatalf("expected everything done, got %d out of %d", done, len(items))
+		if done != len(occs) {
+			t.Fatalf("expected everything done, got %d out of %d", done, len(occs))
 		}
 	}
 }
