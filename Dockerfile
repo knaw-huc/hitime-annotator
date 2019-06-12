@@ -1,16 +1,17 @@
+# Build server (backend) image.
 FROM golang:1.12-alpine as buildserver
 
 # Git is needed by go get.
 RUN apk add --no-cache git
 
-WORKDIR /go/src/github.com/knaw-huc/hitime-annotator
+WORKDIR /build
 COPY . .
 
-RUN go get -t -v ./...
 RUN CGO_ENABLED=0 go test ./...
-RUN CGO_ENABLED=0 go install -ldflags="-s" .
+RUN CGO_ENABLED=0 go build -ldflags="-s" .
 
 
+# Build UI (frontend) image.
 FROM node:11-alpine as buildui
 
 WORKDIR /hitime
@@ -30,8 +31,9 @@ RUN npm install
 RUN npm run build
 
 
+# Combine server and UI into a deployable image.
 FROM scratch
-COPY --from=buildserver /go/bin/hitime-annotator .
+COPY --from=buildserver /build/hitime-annotator .
 COPY --from=buildui /hitime/build ./ui
 
 EXPOSE 8080

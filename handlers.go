@@ -169,24 +169,25 @@ func (a *annotator) getIndex(w http.ResponseWriter, ps httprouter.Params) int {
 	return i
 }
 
-// Returns -1 on error.
-func naturalValue(w http.ResponseWriter, v url.Values, key string, def int) int {
+// Parses v.Get(key) as an unsigned integer (cast to int).
+// If the key has no value, returns def.
+//
+// Reports errors on w, as well as returning them.
+func uintValue(w http.ResponseWriter, v url.Values, key string, def int) (value int, err error) {
 	s := v.Get(key)
 	if s == "" {
-		return def
+		value = def
+		return
 	}
-	i, err := strconv.Atoi(s)
+
+	i, err := strconv.ParseUint(s, 10, 0)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "invalid %s parameter: %q", key, s)
-		return -1
+		http.Error(w, fmt.Sprintf("invalid %s value: %q", key, s), http.StatusBadRequest)
+		return
 	}
-	if i < 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Fprintf(w, "parameter %s should be >= 0, was: %d", key, i)
-		return -1
-	}
-	return i
+
+	value = int(i)
+	return
 }
 
 func (a *annotator) statistics(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -221,13 +222,13 @@ func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprou
 		return
 	}
 
-	from := naturalValue(w, uparams, "from", 0)
-	if from == -1 {
+	from, err := uintValue(w, uparams, "from", 0)
+	if err != nil {
 		return
 	}
 
-	size := naturalValue(w, uparams, "size", 10)
-	if size == -1 {
+	size, err := uintValue(w, uparams, "size", 10)
+	if err != nil {
 		return
 	}
 
@@ -260,13 +261,13 @@ func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httproute
 		return
 	}
 
-	fromParam := naturalValue(w, uparams, "from", 0)
-	if fromParam == -1 {
+	fromParam, err := uintValue(w, uparams, "from", 0)
+	if err != nil {
 		return
 	}
 
-	sizeParam := naturalValue(w, uparams, "size", 10)
-	if sizeParam == -1 {
+	sizeParam, err := uintValue(w, uparams, "size", 10)
+	if err != nil {
 		return
 	}
 
