@@ -5,15 +5,14 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 )
 
-func readItems(path string) ([]item, error) {
+func readItems(path string) (items []item, err error) {
 	f, err := os.Open(path)
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 	defer f.Close()
 
@@ -21,22 +20,22 @@ func readItems(path string) ([]item, error) {
 	if filepath.Ext(path) == ".gz" {
 		r, err = gzip.NewReader(r)
 		if err != nil {
-			log.Fatal(err)
+			return
 		}
 		defer r.Close()
 	}
 
 	dec := json.NewDecoder(r)
-	var items []item
 	for {
 		var it item
 		switch err = dec.Decode(&it); err {
 		case nil:
 			items = append(items, it)
 		case io.EOF:
-			return items, nil
+			err = nil
+			return
 		default:
-			return nil, err
+			return
 		}
 	}
 }
