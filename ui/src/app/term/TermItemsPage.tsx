@@ -13,13 +13,14 @@ class TermItemsPage extends React.Component<any, any> {
             from: 0,
             total: 0,
             size: 10,
-            items: []
+            items: [],
+            termId: decodeURIComponent(this.props.match.params.tid)
         };
         this.getTermItems();
     }
 
     private getTermItems(from = this.state.from, size = this.state.size) {
-        Resources.getTerm(this.props.match.params.tid, from, size).then((termsResponse) => {
+        Resources.getTerm(this.state.termId, from, size).then((termsResponse) => {
             termsResponse.json().then((json) => {
                 this.setState({
                     items: json.occurences,
@@ -44,7 +45,7 @@ class TermItemsPage extends React.Component<any, any> {
                         {t.controlAccess ? <small className="text-secondary"> (control access)</small> : null}
                         <button
                             className="btn btn-success btn-sm float-right"
-                            onClick={() => this.props.history.push(`/terms/${encodeURIComponent(this.props.match.params.tid)}/items/${t.id}/annotate/`)}
+                            onClick={() => this.props.history.push(`/terms/${encodeURIComponent(this.state.termId)}/items/${t.id}/annotate/`)}
                         >
                             annotate
                             &nbsp;
@@ -68,7 +69,7 @@ class TermItemsPage extends React.Component<any, any> {
 
         return (
             <Page className="term-items">
-                <h2>Occurrences of {this.props.match.params.tid}</h2>
+                <h2>Occurrences of {this.state.termId}</h2>
                 {this.renderItems()}
                 {/* server is zero- and component one-based: */}
                 <MinimalPagination

@@ -13,12 +13,13 @@ class AnnotatePage extends React.Component<any, any> {
             checked: null,
             input: null,
             itemWithSuggestions: [],
-            error: null
+            error: null,
+            termId: decodeURIComponent(this.props.match.params.tid)
         };
     }
 
     private handleSkip = () => {
-        this.props.history.push(`/terms/${this.props.match.params.tid}/`);
+        this.props.history.push(`/terms/${encodeURIComponent(this.state.termId)}/`);
     };
 
     private handleRating = () => {

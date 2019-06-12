@@ -33,7 +33,7 @@ class Resources {
     };
 
     public static getTerm = (index: string, from: number, size: number) => {
-        return fetch(`${config.HOST}${config.API}/term?term=${index}&from=${from}&size=${size}`);
+        return fetch(`${config.HOST}${config.API}/term?term=${encodeURIComponent(index)}&from=${from}&size=${size}`);
     };
 
 }
