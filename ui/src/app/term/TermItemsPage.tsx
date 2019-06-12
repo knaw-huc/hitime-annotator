@@ -36,6 +36,10 @@ class TermItemsPage extends React.Component<any, any> {
     private renderItems() {
         return <ul className="list-group mt-3">
             {this.state.items.map((t: any, i: number) => {
+                const btnText = t.annotated
+                    ? <>annotated <i className="fa fa-check"/></>
+                    : <>annotate <i className="fa fa-chevron-right"/></>;
+
                 return <li
                     key={i}
                     className="list-group-item list-group-item-action"
@@ -44,12 +48,11 @@ class TermItemsPage extends React.Component<any, any> {
                         <span className="text-primary">{t.source}</span>
                         {t.controlAccess ? <small className="text-secondary"> (control access)</small> : null}
                         <button
+                            disabled={t.annotated}
                             className="btn btn-success btn-sm float-right"
                             onClick={() => this.props.history.push(`/terms/${encodeURIComponent(this.state.termId)}/items/${t.id}/annotate/`)}
                         >
-                            annotate
-                            &nbsp;
-                            <i className="fa fa-chevron-right"/>
+                            {btnText}
                         </button>
                     </div>
                 </li>;
