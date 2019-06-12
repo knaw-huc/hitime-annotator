@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -19,8 +18,6 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 )
-
-var html = template.New("")
 
 // An annotator holds a collection of items, some annotated, some not yet.
 type annotator struct {
