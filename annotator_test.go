@@ -6,10 +6,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestReadWriteItems(t *testing.T) {
@@ -63,9 +64,7 @@ func readAndCheckEquals(t *testing.T, path string, occs []occurrence) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(got, occs) {
-		t.Errorf("got %v, wanted %v", got, occs)
-	}
+	assert.Equal(t, occs, got)
 }
 
 func compress(p []byte) []byte {
@@ -110,8 +109,6 @@ func TestSetGolden(t *testing.T) {
 		if err == nil || err.Error() != "already answered" {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if done != len(occs) {
-			t.Fatalf("expected everything done, got %d out of %d", done, len(occs))
-		}
+		assert.Equal(t, len(occs), done)
 	}
 }
