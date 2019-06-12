@@ -215,7 +215,8 @@ func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprou
 	uparams := r.URL.Query()
 
 	if uparams.Get("term") != "" {
-		fmt.Fprintf(w, "superfluous 'term' parameter for /api/terms, try at /api/term")
+		http.Error(w, fmt.Sprintf("superfluous 'term' parameter for /api/terms, try at /api/term"),
+			http.StatusBadRequest)
 		return
 	}
 
@@ -254,7 +255,7 @@ func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httproute
 
 	termParam := uparams.Get("term")
 	if termParam == "" {
-		fmt.Fprintf(w, "missing term parameter")
+		http.Error(w, fmt.Sprintf("missing term parameter"), http.StatusBadRequest)
 		return
 	}
 
