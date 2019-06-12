@@ -27,13 +27,6 @@ class HomePage extends React.Component<any, any> {
         });
     }
 
-    private onSave() {
-        Resources
-            .save()
-            .then(() => this.setState({info: "Annotated entities are succesfully saved"}))
-            .catch(() => this.setState({error: "Could not save"}));
-    }
-
     private onDownload() {
         this.setState({loading: true}, () => {
             Resources
@@ -41,8 +34,9 @@ class HomePage extends React.Component<any, any> {
                 .then((data) => {
                     data.text().then((txt) => {
                         const blob = new Blob([txt], {type: " application/json;charset=utf-8"});
-                        FileSaver.saveAs(blob, "dump.json");
-                        this.setState({loading: false, info: "Annotated entities downloaded as dump.json"})
+                        let filename = "dump.json";
+                        FileSaver.saveAs(blob, filename);
+                        this.setState({loading: false, info: `Annotated entities downloaded as ${filename}`})
                     });
                 })
                 .catch(() => this.setState({loading: false, error: "Could not download"}));
@@ -60,12 +54,29 @@ class HomePage extends React.Component<any, any> {
             <Page>
                 <InfoBox msg={this.state.error} type="warning" onClose={() => this.setState({error: null})}/>
                 <InfoBox msg={this.state.info} type="info" onClose={() => this.setState({info: null})}/>
+
+                <InfoBox msg={<>
+                    From&nbsp;
+                    <span className="badge badge-secondary badge-pill">{total}</span>&nbsp;
+                    items there are&nbsp;
+                    <span className="badge badge-secondary badge-pill">{todo}</span>&nbsp;
+                    left to annotate.
+                </>} type="info"/>
+
                 <ul className="list-group">
                     <li className="list-group-item">
-                        Annotate next item:&nbsp;
-                        <span className="badge badge-secondary badge-pill">{todo}</span> out of &nbsp;
-                        <span className="badge badge-secondary badge-pill">{total}</span>&nbsp;
-                        items left
+                        View pers- and corpnames:&nbsp;
+                        <Link
+                            to="/terms/"
+                            className="btn btn-success btn-sm float-right"
+                        >
+                            view
+                            &nbsp;
+                            <i className="fa fa-chevron-right"/>
+                        </Link>
+                    </li>
+                    <li className="list-group-item">
+                        Annotate next random item:&nbsp;
                         <Link
                             to="/annotate/"
                             className="btn btn-success btn-sm float-right"
@@ -74,17 +85,6 @@ class HomePage extends React.Component<any, any> {
                             &nbsp;
                             <i className="fa fa-chevron-right"/>
                         </Link>
-                    </li>
-                    <li className="list-group-item">
-                        Force server side commit of entities
-                        <button
-                            onClick={() => this.onSave()}
-                            className="btn btn-success btn-sm float-right"
-                        >
-                            commit
-                            &nbsp;
-                            <i className="fa fa-save"/>
-                        </button>
                     </li>
                     <li className="list-group-item">
                         Download JSON export of all entities

@@ -28,10 +28,6 @@ class Resources {
         return fetch(`${config.HOST}${config.API}/dump`);
     };
 
-    public static save = () => {
-        return fetch(`${config.HOST}${config.API}/save`);
-    };
-
     public static getTerms = (from: number, size: number) => {
         return fetch(`${config.HOST}${config.API}/terms?from=${from}&size=${size}`);
     };

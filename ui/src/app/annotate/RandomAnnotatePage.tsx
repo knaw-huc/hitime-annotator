@@ -2,37 +2,38 @@ import * as React from "react";
 import Page from "../common/Page";
 import Resources from "../Resources";
 import {withRouter} from "react-router";
-import Annotator from "./Annotator";
 import LoadingPage from "../common/LoadingPage";
-import InfoBox from "../common/InfoBox";
+import InfoPage from "../common/InfoPage";
+import Annotator from "./Annotator";
 
-class AnnotatePage extends React.Component<any, any> {
+class RandomAnnotatePage extends React.Component<any, any> {
     constructor(props: any, context: any) {
         super(props, context);
         this.state = {
             checked: null,
-            input: null,
             itemWithSuggestions: [],
+            loading: true,
             error: null
         };
+        this.getRandomItem();
+    }
+
+    private getRandomItem() {
+        Resources.getRandomIndex().then((randomIndexResponse) => {
+            randomIndexResponse.text().then((text) => {
+                const index = parseInt(text);
+                this.setState({index, loading: false});
+            });
+        }).catch(() => this.setState({loading: false, error: "Could not get new random index"}))
     }
 
     private handleSkip = () => {
-        this.props.history.push(`/terms/${this.props.match.params.tid}/`);
+        this.props.history.push('/annotate/');
     };
 
     private handleRating = () => {
-        Resources.putAnnotation(this.props.match.params.iid, this.state.checked).then(() => {
-            let newId = parseInt(this.props.match.params.iid) + 1;
-            Resources.getItem(newId).then((response) => {
-                if (response.ok) {
-                    response.json().then((json) => {
-                        this.props.history.push(`/terms/${json.input}/items/${newId}/annotate`);
-                    });
-                } else {
-                    this.props.history.push(`/terms/`);
-                }
-            }).catch(() => this.setState({loading: false, error: "Checking if annotation exists failed"}));
+        Resources.putAnnotation(this.state.index, this.state.checked).then(() => {
+            this.props.history.push('/annotate/');
         }).catch(() => this.setState({loading: false, error: "Could not save new annotation"}));
     };
 
@@ -40,12 +41,14 @@ class AnnotatePage extends React.Component<any, any> {
         if (this.state.loading)
             return <LoadingPage/>;
 
+        if (this.state.error)
+            return <InfoPage msg={this.state.error} type="warning"/>;
+
         return (
             <Page>
                 <h2>Annotate</h2>
-                {<InfoBox msg={this.state.error} type="warning" onClose={() => this.setState({error: null})}/>}
                 <Annotator
-                    item={this.props.match.params.iid}
+                    item={this.state.index}
                     checked={this.state.checked}
                     onSetChecked={(checked: string) => this.setState({checked})}
                 />
@@ -73,4 +76,4 @@ class AnnotatePage extends React.Component<any, any> {
     }
 }
 
-export default withRouter(AnnotatePage);
+export default withRouter(RandomAnnotatePage);
