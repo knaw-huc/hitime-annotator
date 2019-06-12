@@ -31,11 +31,6 @@ type annotator struct {
 	lastChange, lastSave time.Time // timestamps for periodic saving goroutine
 }
 
-type inputFreq struct {
-	Key  string `json:"key"`
-	Freq int    `json:"freq"`
-}
-
 func newAnnotator(path string) (a *annotator, err error) {
 	items, err := readItems(path)
 	if err != nil {
@@ -228,6 +223,11 @@ func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprou
 	size, err := uintValue(w, uparams, "size", 10)
 	if err != nil {
 		return
+	}
+
+	type inputFreq struct {
+		Key  string `json:"key"`
+		Freq int    `json:"freq"`
 	}
 
 	from, upto := clamp(from, size, len(a.byFreq))
