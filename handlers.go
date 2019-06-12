@@ -95,8 +95,8 @@ func (a *annotator) makeHandler() http.Handler {
 	r.GET("/api/items/:index", a.getItem)
 	r.PUT("/api/items/:index", a.putAnswer)
 
+	r.GET("/api/term", a.getTerm)
 	r.GET("/api/terms", a.listTerms)
-	r.GET("/api/terms/:term", a.getTerm)
 
 	r.GET("/api/randomindex", a.randomIndex)
 	r.GET("/api/statistics", a.statistics)
@@ -215,6 +215,12 @@ func (a *annotator) getItem(w http.ResponseWriter, r *http.Request, ps httproute
 
 func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	uparams := r.URL.Query()
+
+	if uparams.Get("term") != "" {
+		fmt.Fprintf(w, "superfluous 'term' parameter for /api/terms, try at /api/term")
+		return
+	}
+
 	from := naturalValue(w, uparams, "from", 0)
 	if from == -1 {
 		return
