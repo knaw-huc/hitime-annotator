@@ -95,8 +95,8 @@ func (a *annotator) makeHandler() http.Handler {
 	r.GET("/api/items/:index", a.getItem)
 	r.PUT("/api/items/:index", a.putAnswer)
 
+	r.GET("/api/term", a.getTerm)
 	r.GET("/api/terms", a.listTerms)
-	r.GET("/api/terms/:term", a.getTerm)
 
 	r.GET("/api/randomindex", a.randomIndex)
 	r.GET("/api/statistics", a.statistics)
@@ -215,6 +215,12 @@ func (a *annotator) getItem(w http.ResponseWriter, r *http.Request, ps httproute
 
 func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	uparams := r.URL.Query()
+
+	if uparams.Get("term") != "" {
+		fmt.Fprintf(w, "superfluous 'term' parameter for /api/terms, try at /api/term")
+		return
+	}
+
 	from := naturalValue(w, uparams, "from", 0)
 	if from == -1 {
 		return
@@ -247,6 +253,13 @@ func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprou
 
 func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	uparams := r.URL.Query()
+
+	termParam := uparams.Get("term")
+	if termParam == "" {
+		fmt.Fprintf(w, "missing term parameter")
+		return
+	}
+
 	fromParam := naturalValue(w, uparams, "from", 0)
 	if fromParam == -1 {
 		return
@@ -263,7 +276,6 @@ func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httproute
 		ControlAccess bool   `json:"controlAccess"`
 	}
 
-	termParam := ps.ByName("term")
 	hits := a.byInput[termParam]
 	if hits == nil {
 		w.WriteHeader(http.StatusNotFound)
