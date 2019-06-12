@@ -275,6 +275,7 @@ func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httproute
 		Id            int    `json:"id"`
 		Source        string `json:"source"`
 		ControlAccess bool   `json:"controlAccess"`
+		Annotated     bool   `json:"annotated"`
 	}
 
 	hits := a.byInput[termParam]
@@ -294,6 +295,7 @@ func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httproute
 			Id:            index,
 			Source:        item.Id,
 			ControlAccess: item.ControlAccess,
+			Annotated:     !a.todo.Contains(index),
 		}
 	}
 
