@@ -255,7 +255,7 @@ func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httproute
 
 	termParam := uparams.Get("term")
 	if termParam == "" {
-		http.Error(w, fmt.Sprintf("missing term parameter"), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("missing 'term' query parameter"), http.StatusBadRequest)
 		return
 	}
 
