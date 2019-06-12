@@ -44,7 +44,7 @@ class TopTermsPage extends React.Component<any, any> {
                         <small className="text-secondary"> ({t.freq}x)</small>
                         <button
                             className="btn btn-success btn-sm float-right"
-                            onClick={() => this.props.history.push(`/terms/${t.key}/`)}
+                            onClick={() => this.props.history.push(`/terms/${encodeURIComponent(t.key)}/`)}
                         >
                             view
                             &nbsp;

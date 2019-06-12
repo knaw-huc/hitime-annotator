@@ -32,8 +32,8 @@ class Resources {
         return fetch(`${config.HOST}${config.API}/terms?from=${from}&size=${size}`);
     };
 
-    public static getTerm = (index: number, from: number, size: number) => {
-        return fetch(`${config.HOST}${config.API}/terms/${index}?from=${from}&size=${size}`);
+    public static getTerm = (index: string, from: number, size: number) => {
+        return fetch(`${config.HOST}${config.API}/term?term=${index}&from=${from}&size=${size}`);
     };
 
 }

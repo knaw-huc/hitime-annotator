@@ -44,7 +44,7 @@ class TermItemsPage extends React.Component<any, any> {
                         {t.controlAccess ? <small className="text-secondary"> (control access)</small> : null}
                         <button
                             className="btn btn-success btn-sm float-right"
-                            onClick={() => this.props.history.push(`/terms/${this.props.match.params.tid}/items/${t.id}/annotate/`)}
+                            onClick={() => this.props.history.push(`/terms/${encodeURIComponent(this.props.match.params.tid)}/items/${t.id}/annotate/`)}
                         >
                             annotate
                             &nbsp;

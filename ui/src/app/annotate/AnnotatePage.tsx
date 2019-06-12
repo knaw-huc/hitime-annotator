@@ -27,7 +27,7 @@ class AnnotatePage extends React.Component<any, any> {
             Resources.getItem(newId).then((response) => {
                 if (response.ok) {
                     response.json().then((json) => {
-                        this.props.history.push(`/terms/${json.input}/items/${newId}/annotate`);
+                        this.props.history.push(`/terms/${encodeURIComponent(json.input)}/items/${newId}/annotate`);
                     });
                 } else {
                     this.props.history.push(`/terms/`);
