@@ -1,10 +1,17 @@
 # Build server (backend) image.
 FROM golang:1.12-alpine as buildserver
 
-# Git is needed by go get.
+# Git is needed by go mod download.
 RUN apk add --no-cache git
 
 WORKDIR /build
+
+# Download dependencies in a separate step from the actual build,
+# so they remain cached when the sources change
+# (https://container-solutions.com/faster-builds-in-docker-with-go-1-11/).
+COPY go.mod go.sum ./
+RUN go mod download
+
 COPY . .
 
 RUN CGO_ENABLED=0 go test ./...
