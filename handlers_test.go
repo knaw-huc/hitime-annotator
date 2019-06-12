@@ -28,3 +28,34 @@ func TestUintValue(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Contains(t, w.Body.String(), "invalid")
 }
+
+func TestGetTerm(t *testing.T) {
+	a := &annotator{}
+	r := a.makeHandler()
+
+	req := httptest.NewRequest("GET", "/api/term", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	for _, hint := range []string{"missing", "parameter", "term"} {
+		assert.Contains(t, w.Body.String(), hint)
+	}
+
+	req = httptest.NewRequest("GET", "/api/term?term=some_key", nil)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code) // test uses empty db => NotFound
+}
+
+func TestGetTerms(t *testing.T) {
+	a := &annotator{}
+	r := a.makeHandler()
+
+	req := httptest.NewRequest("GET", "/api/terms?term=some_key", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	for _, hint := range []string{"superfluous", "parameter", "term"} {
+		assert.Contains(t, w.Body.String(), hint)
+	}
+}
