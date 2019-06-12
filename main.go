@@ -19,7 +19,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("%d items", len(a.items))
+	log.Printf("%d items", len(a.occs))
 
 	srv := &http.Server{
 		Addr:    os.Args[1],
@@ -55,27 +55,4 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-// An item is an input to be annotated, its candidates, and optionally
-// its gold standard.
-type item struct {
-	Id         string      `json:"id,omitempty"` // identifier
-	Input      string      `json:"input"`
-	Candidates []candidate `json:"candidates"`
-
-	// Golden is the id of the true answer, "" for not yet assessed, "?" for unknown.
-	Golden string `json:"golden,omitempty"`
-
-	Type   string `json:"type,omitempty"`   // "pers" or "corp"
-	Method string `json:"method,omitempty"` // algorithm/distance metric
-
-	// Whether Input occurred in a controlaccess element.
-	ControlAccess bool `json:"controlaccess"`
-}
-
-type candidate struct {
-	Id       string   `json:"id"`
-	Names    []string `json:"names"`
-	Distance float64  `json:"distance"`
 }

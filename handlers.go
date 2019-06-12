@@ -19,33 +19,56 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// An annotator holds a collection of items, some annotated, some not yet.
+// An annotator holds a collection of occurrences and provides an http.Handler.
 type annotator struct {
-	items   []item
+	occs    []occurrence
 	byInput map[string][]int // item indices with same input
 	byFreq  []string         // input strings ordered by freq desc
 	path    string           // path of file read from, or ""
 	mu      sync.RWMutex     // protects todo, lastChange and lastSave
-	todo    intset           // indices of items not yet annotated
+	todo    intset           // indices of occs not yet annotated
 
 	lastChange, lastSave time.Time // timestamps for periodic saving goroutine
 }
 
+// An occurrence is an input to be annotated, its candidates, and optionally
+// its gold standard.
+type occurrence struct {
+	Id         string      `json:"id,omitempty"` // identifier
+	Input      string      `json:"input"`
+	Candidates []candidate `json:"candidates"`
+
+	// Golden is the id of the true answer, "" for not yet assessed, "?" for unknown.
+	Golden string `json:"golden,omitempty"`
+
+	Type   string `json:"type,omitempty"`   // "pers" or "corp"
+	Method string `json:"method,omitempty"` // algorithm/distance metric
+
+	// Whether Input occurred in a controlaccess element.
+	ControlAccess bool `json:"controlaccess"`
+}
+
+type candidate struct {
+	Id       string   `json:"id"`
+	Names    []string `json:"names"`
+	Distance float64  `json:"distance"`
+}
+
 func newAnnotator(path string) (a *annotator, err error) {
-	items, err := readItems(path)
+	occs, err := readFile(path)
 	if err != nil {
 		return
 	}
-	a = &annotator{items: items, path: path}
+	a = &annotator{occs: occs, path: path}
 	a.initTodo()
 	a.groupByFreqDesc()
 	return
 }
 
 func (a *annotator) initTodo() {
-	a.todo.Init(len(a.items))
+	a.todo.Init(len(a.occs))
 
-	for i, it := range a.items {
+	for i, it := range a.occs {
 		if it.Golden == "" {
 			a.todo.Add(i)
 		}
@@ -54,8 +77,8 @@ func (a *annotator) initTodo() {
 
 func (a *annotator) groupByFreqDesc() {
 	// group all item indices by their input string
-	a.byInput = make(map[string][]int, len(a.items)/2) // guestimate # of unique input strings
-	for i, it := range a.items {
+	a.byInput = make(map[string][]int, len(a.occs)/2) // guestimate # of unique input strings
+	for i, it := range a.occs {
 		a.byInput[it.Input] = append(a.byInput[it.Input], i)
 	}
 
@@ -102,7 +125,7 @@ func (a *annotator) dump(w http.ResponseWriter, r *http.Request, _ httprouter.Pa
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
-	writeJSON(w, a.items)
+	writeJSON(w, a.occs)
 }
 
 func (a *annotator) save(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -124,7 +147,7 @@ func (a *annotator) lockAndSave() error {
 
 func (a *annotator) saveLocked() error {
 	log.Printf("saving to %q", a.path)
-	if err := writeItems(a.path, a.items); err != nil {
+	if err := writeFile(a.path, a.occs); err != nil {
 		return err
 	}
 
@@ -149,12 +172,12 @@ func (a *annotator) savePeriodically() {
 }
 
 // Gets the "index" param from c as an integer and checks whether it is
-// in-bounds for items. Otherwise, returns -1 after rendering an error message.
+// in-bounds for occurrences. Otherwise, returns -1 after rendering an error message.
 func (a *annotator) getIndex(w http.ResponseWriter, ps httprouter.Params) int {
 	idxparam := ps.ByName("index")
 	i, err := strconv.Atoi(idxparam)
 
-	if err != nil || i < 0 || i >= len(a.items) {
+	if err != nil || i < 0 || i >= len(a.occs) {
 		http.Error(w, fmt.Sprintf("invalid index %q", idxparam), http.StatusNotFound)
 		return -1
 	}
@@ -185,7 +208,7 @@ func uintValue(w http.ResponseWriter, v url.Values, key string, def int) (value 
 func (a *annotator) statistics(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	a.mu.RLock()
 	todo := a.todo.Len()
-	total := len(a.items)
+	total := len(a.occs)
 	a.mu.RUnlock()
 
 	writeJSON(w, struct {
@@ -203,7 +226,7 @@ func (a *annotator) getItem(w http.ResponseWriter, r *http.Request, ps httproute
 		return
 	}
 
-	writeJSON(w, a.items[i])
+	writeJSON(w, a.occs[i])
 }
 
 func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -285,7 +308,7 @@ func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httproute
 	controlAccessTally := 0
 	occurs := make([]occ, len(hits))
 	for i, index := range hits {
-		item := a.items[index]
+		item := a.occs[index]
 		if item.ControlAccess {
 			controlAccessTally++
 		}
@@ -367,21 +390,21 @@ func (a *annotator) putAnswer(w http.ResponseWriter, r *http.Request, ps httprou
 	w.WriteHeader(http.StatusOK)
 }
 
-// Stores the given answer for the i'th item in a.
-// Reports the number of items done and an error if the i'th item was already
-// annotated with an answer.
+// Stores the given answer for the i'th occurrence in a.
+// Reports the number of occurences done and an error if the i'th occurrence
+// was already annotated with an answer.
 func (a *annotator) setGolden(i int, answer string) (done int, err error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	done = len(a.items) - a.todo.Len()
+	done = len(a.occs) - a.todo.Len()
 
 	if !a.todo.Remove(i) {
 		err = errors.New("already answered")
 		return
 	}
 
-	a.items[i].Golden = answer
+	a.occs[i].Golden = answer
 	a.lastChange = time.Now()
 	done++
 	return

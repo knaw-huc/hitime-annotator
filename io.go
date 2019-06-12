@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-func readItems(path string) (items []item, err error) {
+func readFile(path string) (occs []occurrence, err error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return
@@ -27,10 +27,10 @@ func readItems(path string) (items []item, err error) {
 
 	dec := json.NewDecoder(r)
 	for {
-		var it item
-		switch err = dec.Decode(&it); err {
+		var occ occurrence
+		switch err = dec.Decode(&occ); err {
 		case nil:
-			items = append(items, it)
+			occs = append(occs, occ)
 		case io.EOF:
 			err = nil
 			return
@@ -43,7 +43,7 @@ func readItems(path string) (items []item, err error) {
 // Writes items to path, each item JSON-encoded, one item per line.
 //
 // If path has the extension .gz, the JSON is gzipped first.
-func writeItems(path string, items []item) error {
+func writeFile(path string, occ []occurrence) error {
 	// First write to temp file, then move to final destination.
 	// Not doing this runs the risk of overwriting an existing
 	// file with half a file due to a crash.
@@ -68,8 +68,8 @@ func writeItems(path string, items []item) error {
 		defer w.Close()
 	}
 
-	for i := range items {
-		if err = json.NewEncoder(w).Encode(&items[i]); err != nil {
+	for i := range occ {
+		if err = json.NewEncoder(w).Encode(&occ[i]); err != nil {
 			break
 		}
 	}
