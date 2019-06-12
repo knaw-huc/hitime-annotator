@@ -247,6 +247,13 @@ func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprou
 
 func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	uparams := r.URL.Query()
+
+	termParam := uparams.Get("term")
+	if termParam == "" {
+		fmt.Fprintf(w, "missing term parameter")
+		return
+	}
+
 	fromParam := naturalValue(w, uparams, "from", 0)
 	if fromParam == -1 {
 		return
@@ -263,7 +270,6 @@ func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httproute
 		ControlAccess bool   `json:"controlAccess"`
 	}
 
-	termParam := ps.ByName("term")
 	hits := a.byInput[termParam]
 	if hits == nil {
 		w.WriteHeader(http.StatusNotFound)
