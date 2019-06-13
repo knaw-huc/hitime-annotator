@@ -110,8 +110,8 @@ func (a *annotator) makeHandler() http.Handler {
 	r.GET("/api/items/:index", a.getOccurrence)
 	r.PUT("/api/items/:index", a.putAnswer)
 
-	r.GET("/api/term", a.getTerm)
-	r.GET("/api/terms", a.listTerms)
+	r.GET("/api/term", a.getName)
+	r.GET("/api/terms", a.listNames)
 
 	r.GET("/api/randomindex", a.randomIndex)
 	r.GET("/api/statistics", a.statistics)
@@ -229,7 +229,8 @@ func (a *annotator) getOccurrence(w http.ResponseWriter, r *http.Request, ps htt
 	writeJSON(w, a.occs[i])
 }
 
-func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+// List distinct names with occurrence statistics for each.
+func (a *annotator) listNames(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	uparams := r.URL.Query()
 
 	if uparams.Get("term") != "" {
@@ -273,7 +274,8 @@ func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprou
 	})
 }
 
-func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+// List occurrences of a given name.
+func (a *annotator) getName(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	uparams := r.URL.Query()
 
 	termParam := uparams.Get("term")
