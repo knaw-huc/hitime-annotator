@@ -9,6 +9,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestClampRange(t *testing.T) {
+	from, upto := clampRange(3, 2, 100)
+	assert.Equal(t, 3, from)
+	assert.Equal(t, 5, upto)
+
+	from, upto = clampRange(4, 6, 8)
+	assert.Equal(t, 4, from)
+	assert.Equal(t, 8, upto)
+
+	from, upto = clampRange(0, 0, 0)
+	assert.Equal(t, 0, from)
+	assert.Equal(t, 0, upto)
+}
+
 func TestUintValue(t *testing.T) {
 	w := httptest.NewRecorder()
 	i, err := uintValue(w, url.Values{"key": []string{"42"}}, "key", 1)
