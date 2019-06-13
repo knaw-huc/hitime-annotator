@@ -253,7 +253,7 @@ func (a *annotator) listTerms(w http.ResponseWriter, r *http.Request, ps httprou
 		Freq int    `json:"freq"`
 	}
 
-	from, upto := clamp(from, size, len(a.byFreq))
+	from, upto := clampRange(from, size, len(a.byFreq))
 	keys := a.byFreq[from:upto]
 	freq := make([]inputFreq, len(keys))
 	for i, k := range keys {
@@ -330,7 +330,7 @@ func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httproute
 		return false
 	})
 
-	from, upto := clamp(fromParam, sizeParam, len(occurs))
+	from, upto := clampRange(fromParam, sizeParam, len(occurs))
 
 	writeJSON(w, struct {
 		Term   string `json:"@term"`
@@ -349,13 +349,15 @@ func (a *annotator) getTerm(w http.ResponseWriter, r *http.Request, ps httproute
 	})
 }
 
-func clamp(low, size, max int) (from, upto int) {
-	from = low
-	upto = from + size // optimistic init
-	if from >= max {
-		from = max - 1 // max index
-		upto = from
-	} else if from+size > max {
+// ClampRange returns the range [low, low+size], restricted to the interval [0, max].
+//
+// Low and size must be non-negative.
+func clampRange(low, size, max int) (from, upto int) {
+	from, upto = low, low+size
+	if from > max {
+		from = max
+	}
+	if upto > max {
 		upto = max
 	}
 	return
