@@ -43,7 +43,7 @@ func TestUintValue(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "invalid")
 }
 
-func TestGetTerm(t *testing.T) {
+func TestGetName(t *testing.T) {
 	a := &annotator{}
 	r := a.makeHandler()
 
@@ -61,7 +61,7 @@ func TestGetTerm(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code) // test uses empty db => NotFound
 }
 
-func TestGetTerms(t *testing.T) {
+func TestGetNames(t *testing.T) {
 	a := &annotator{}
 	r := a.makeHandler()
 
