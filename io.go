@@ -40,7 +40,7 @@ func readFile(path string) (occs []occurrence, err error) {
 	}
 }
 
-// Writes items to path, each item JSON-encoded, one item per line.
+// Writes occ to path, each item JSON-encoded, one occurrence per line.
 //
 // If path has the extension .gz, the JSON is gzipped first.
 func writeFile(path string, occ []occurrence) error {

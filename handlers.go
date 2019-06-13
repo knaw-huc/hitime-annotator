@@ -107,7 +107,7 @@ func (a *annotator) makeHandler() http.Handler {
 	r.GET("/api/dump", a.dump)
 	r.GET("/api/save", a.save)
 
-	r.GET("/api/items/:index", a.getItem)
+	r.GET("/api/items/:index", a.getOccurrence)
 	r.PUT("/api/items/:index", a.putAnswer)
 
 	r.GET("/api/term", a.getTerm)
@@ -220,7 +220,7 @@ func (a *annotator) statistics(w http.ResponseWriter, r *http.Request, _ httprou
 	})
 }
 
-func (a *annotator) getItem(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func (a *annotator) getOccurrence(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	i := a.getIndex(w, ps)
 	if i == -1 {
 		return

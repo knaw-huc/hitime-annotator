@@ -19,7 +19,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("%d items", len(a.occs))
+	log.Printf("%d occurrences", len(a.occs))
 
 	srv := &http.Server{
 		Addr:    os.Args[1],
