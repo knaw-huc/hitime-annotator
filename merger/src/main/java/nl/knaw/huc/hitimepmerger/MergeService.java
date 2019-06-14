@@ -100,7 +100,7 @@ public class MergeService {
   }
 
   private void findNodeOfItem(Path eadDir, ItemDto item) {
-    if(item.golden == null) {
+    if (item.golden == null) {
       logger.info("Skip item: field 'golden' not set");
       return;
     }
@@ -158,7 +158,7 @@ public class MergeService {
       .filter(c -> c.id.equals(item.golden))
       .findFirst()
       .orElse(null);
-    if(candidate == null) {
+    if (candidate == null) {
       logger.error(format(
         "Could not find golden candidate of item [id:%s;golden:%s;cand:%s]",
         item.id, item.golden, Arrays.toString(item.candidates.stream().map(c -> c.id).toArray())
@@ -167,8 +167,13 @@ public class MergeService {
     }
 
     var doc = node.getOwnerDocument();
-    var wrapperControlaccess = doc.createElement("controlaccess");
-    controlAccessParent.appendChild(wrapperControlaccess);
+
+    var wrapperControlaccess = findControlaccess(controlAccessParent);
+    if(wrapperControlaccess == null) {
+      wrapperControlaccess = doc.createElement("controlaccess");
+      controlAccessParent.appendChild(wrapperControlaccess);
+    }
+
     var itemControlaccess = doc.createElement("controlaccess");
     wrapperControlaccess.appendChild(itemControlaccess);
     var itemEl = doc.createElement("persname");
@@ -183,6 +188,17 @@ public class MergeService {
     logger.info("text: " + text);
     var itemText = doc.createTextNode(text);
     itemEl.appendChild(itemText);
+  }
+
+  private Node findControlaccess(Node controlAccessParent) {
+    var children = controlAccessParent.getChildNodes();
+    for (var i = 0; i < children.getLength(); i++) {
+      Node child = children.item(i);
+      if (child.getNodeName().equals("controlaccess")) {
+        return child;
+      }
+    }
+    return null;
   }
 
   private Document getDocument(Path eadPath) {
