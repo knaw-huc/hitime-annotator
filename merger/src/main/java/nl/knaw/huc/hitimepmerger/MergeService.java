@@ -24,6 +24,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ import java.util.Map;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 public class MergeService {
 
@@ -49,6 +51,7 @@ public class MergeService {
   private final Map<String, Node> nodes = new HashMap<>();
   private final Path jsonDump;
   private final Path eadDir;
+  private List<ItemDto> items;
 
   public MergeService(Path jsonDump, Path eadDir, String mergeFolder) {
     this.jsonDump = jsonDump;
@@ -64,26 +67,22 @@ public class MergeService {
   }
 
   public void merge() {
-    List<ItemDto> items;
     try {
-      items = asList(new ObjectMapper().readValue(jsonDump.toFile(), ItemDto[].class));
+      this.items = asList(new ObjectMapper().readValue(jsonDump.toFile(), ItemDto[].class));
     } catch (IOException e) {
       throw new RuntimeException(format("Could not read json dump [%s]", jsonDump), e);
     }
 
     items.forEach(i -> findNodeOfItem(eadDir, i));
-    items.forEach(this::addNewControlAccessItem);
+    nodes.forEach(this::addNewControlAccessItem);
 
     saveDocs();
   }
 
   private void saveDocs() {
-    var mergeFileDir = Paths.get("/", eadDir.toString(), mergeFolder);
+    var mergeFileDir = Paths.get(eadDir.toString(), mergeFolder);
     mergeFileDir.toFile().mkdirs();
-
-    this.docs.forEach((originalPath, doc) -> {
-      saveDoc(mergeFileDir, Paths.get(originalPath), doc);
-    });
+    this.docs.forEach((originalPath, doc) -> saveDoc(mergeFileDir, Paths.get(originalPath), doc));
   }
 
   private void saveDoc(Path mergeFileDir, Path originalPath, Document doc) {
@@ -100,18 +99,21 @@ public class MergeService {
     toFile(doc, newMergeFilePath);
   }
 
-  private void findNodeOfItem(Path eadDir, ItemDto i) {
-    var idParts = i.id.split("\\.xml-");
+  private void findNodeOfItem(Path eadDir, ItemDto item) {
+    if(item.golden == null) {
+      logger.info("Skip item: field 'golden' not set");
+      return;
+    }
+
+    var idParts = item.id.split("\\.xml-");
     var eadName = idParts[0] + ".xml";
     var itemN = Integer.parseInt(idParts[1]);
-
-    logger.info(format("Find node of item [%s]", i.id));
 
     var eadPath = Paths.get(eadDir.toString(), eadName);
 
     var doc = getDocument(eadPath);
     if (doc == null) {
-      logger.error(format("Could not find document [%s]", i.input));
+      logger.error(format("Could not find document [%s]", item.input));
       return;
     }
 
@@ -119,7 +121,7 @@ public class MergeService {
     var xpath = xPathfactory.newXPath();
 
     try {
-      var nameType = i.type.getType() + "name";
+      var nameType = item.type.getType() + "name";
       var expression = format("(//%s)[%d]", nameType, itemN + 1);
       var expr = xpath.compile(expression);
       var node = (Node) expr.evaluate(doc, XPathConstants.NODE);
@@ -129,21 +131,38 @@ public class MergeService {
         return;
       }
 
-      nodes.put(i.id, node);
+      nodes.put(item.id, node);
+      logger.info(format("Found node of item [%s]", item.id));
     } catch (NullPointerException | XPathExpressionException e) {
-      logger.error(format("Could not find node of item [%s]", i.id), e);
+      logger.error(format("Could not find node of item [%s]", item.id), e);
     }
   }
 
-  private void addNewControlAccessItem(ItemDto i) {
-    var node = nodes.get(i.id);
-    if (node == null) {
-      logger.warn(format("No node found for item [%s]", i.id));
-      return;
-    }
+  private void addNewControlAccessItem(String itemId, Node node) {
+    logger.info(format("Add new controlaccess element for item [%s]", itemId));
+
+    var item = items
+      .stream()
+      .filter((i) -> i.id.equals(itemId) && !isBlank(i.golden))
+      .findFirst()
+      .orElseThrow();
+
     var controlAccessParent = getParentByNames(node, newArrayList("archdesc", "descgrp"));
     if (controlAccessParent == null) {
-      logger.error(format("No parent for new controlaccess element of item [%s]", i.input));
+      logger.error(format("No parent for new controlaccess element of item [%s]", item.input));
+      return;
+    }
+
+    var candidate = item.candidates
+      .stream()
+      .filter(c -> c.id.equals(item.golden))
+      .findFirst()
+      .orElse(null);
+    if(candidate == null) {
+      logger.error(format(
+        "Could not find golden candidate of item [id:%s;golden:%s;cand:%s]",
+        item.id, item.golden, Arrays.toString(item.candidates.stream().map(c -> c.id).toArray())
+      ));
       return;
     }
 
@@ -152,21 +171,18 @@ public class MergeService {
     controlAccessParent.appendChild(wrapperControlaccess);
     var itemControlaccess = doc.createElement("controlaccess");
     wrapperControlaccess.appendChild(itemControlaccess);
-    var item = doc.createElement("persname");
-    itemControlaccess.appendChild(item);
+    var itemEl = doc.createElement("persname");
+    itemControlaccess.appendChild(itemEl);
 
-    item.setAttribute("role", "subject");
-    item.setAttribute("source", "NL-AMISG");
-    item.setAttribute("authfilenumber", "" + i.golden);
-    item.setAttribute("encodinganalog", i.type.getEncodinganalog());
+    itemEl.setAttribute("role", "subject");
+    itemEl.setAttribute("source", "NL-AMISG");
+    itemEl.setAttribute("authfilenumber", "" + item.golden);
+    itemEl.setAttribute("encodinganalog", item.type.getEncodinganalog());
 
-    var candidate = i.candidates
-      .stream()
-      .filter(c -> c.id.equals(i.golden))
-      .findFirst()
-      .orElseThrow();
-    var itemText = doc.createTextNode(candidate.names.get(0));
-    item.appendChild(itemText);
+    var text = candidate.names.get(0);
+    logger.info("text: " + text);
+    var itemText = doc.createTextNode(text);
+    itemEl.appendChild(itemText);
   }
 
   private Document getDocument(Path eadPath) {
@@ -188,7 +204,7 @@ public class MergeService {
     if (parent == null) {
       return null;
     } else if (names.contains(parent.getNodeName())) {
-      return node;
+      return parent;
     } else {
       return getParentByNames(parent, names);
     }
@@ -201,7 +217,7 @@ public class MergeService {
       var result = new StreamResult(writer);
       transformer.transform(new DOMSource(doc), result);
     } catch (TransformerException | IOException ex) {
-      logger.error(format("Could not convert document to file [%s]", path), ex);
+      logger.error(format("Could not convert document to file [%s]: %s", path, ex.getMessage()));
     }
   }
 

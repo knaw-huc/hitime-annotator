@@ -128,7 +128,7 @@
           <descriptorRefs>
             <descriptorRef>jar-with-dependencies</descriptorRef>
           </descriptorRefs>
-          <finalName>app</finalName>
+          <finalName>merger</finalName>
           <appendAssemblyId>false</appendAssemblyId>
           <archive>
             <manifest>

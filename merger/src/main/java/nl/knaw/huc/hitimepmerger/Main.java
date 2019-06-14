@@ -15,7 +15,7 @@ public class Main {
     public static void main (String args[]) {
         if (args.length < 2 || isBlank(args[0]) || isBlank(args[1])) {
             logger.error("missing arguments");
-            logger.error("usage: merger.jar [dump path] [ead path]");
+            logger.info("usage: merger.jar [dump path] [ead path]");
             return;
         }
 
