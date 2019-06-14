@@ -309,6 +309,8 @@ func (a *annotator) getName(w http.ResponseWriter, r *http.Request, ps httproute
 
 	controlAccessTally := 0
 	occurs := make([]occ, len(hits))
+
+	a.mu.RLock()
 	for i, index := range hits {
 		item := a.occs[index]
 		if item.ControlAccess {
@@ -321,6 +323,7 @@ func (a *annotator) getName(w http.ResponseWriter, r *http.Request, ps httproute
 			Annotated:     !a.todo.Contains(index),
 		}
 	}
+	a.mu.RUnlock()
 
 	sort.Slice(occurs, func(i, j int) bool {
 		if occurs[i].ControlAccess == occurs[j].ControlAccess {
