@@ -1,0 +1,165 @@
+[
+  {
+    "id": "FINAL/nonexistent-ead.xml-0",
+    "input": "Ted Test",
+    "candidates": [
+      {
+        "id": "460146",
+        "names": [
+          "Test, Ted"
+        ],
+        "distance": 0
+      }
+    ],
+    "golden": "460146",
+    "type": "pers",
+    "method": "levenshtein",
+    "controlaccess": false
+  },
+  {
+    "id": "FINAL/minimal-ead.xml-0",
+    "input": "Jan Janssen",
+    "candidates": [
+      {
+        "id": "460147",
+        "names": [
+          "Janssen, Jan"
+        ],
+        "distance": 0
+      }
+    ],
+    "golden": "460147",
+    "type": "pers",
+    "method": "levenshtein",
+    "controlaccess": false
+  },
+  {
+    "id": "FINAL/minimal-ead.xml-1",
+    "input": "Jan Janssen",
+    "candidates": [
+      {
+        "id": "460147",
+        "names": [
+          "Janssen, Jan"
+        ],
+        "distance": 0
+      }
+    ],
+    "golden": "460147",
+    "type": "pers",
+    "method": "levenshtein",
+    "controlaccess": false
+  },
+  {
+    "id": "FINAL/minimal-ead.xml-2",
+    "input": "Jan Klaassen",
+    "candidates": [
+      {
+        "id": "460148",
+        "names": [
+          "Klaassen, Jan"
+        ],
+        "distance": 0
+      }
+    ],
+    "golden": "460148",
+    "type": "pers",
+    "method": "levenshtein",
+    "controlaccess": false
+  },
+  {
+    "id": "FINAL/minimal-ead.xml-0",
+    "input": "PvdA",
+    "candidates": [
+      {
+        "id": "460149",
+        "names": [
+          "Partij van de Arbeid",
+          "PvdA"
+        ],
+        "distance": 0
+      },
+      {
+        "id": "258025",
+        "names": [
+          "Raden van Arbeid",
+          "RvA",
+          "Vereeniging Raden van Arbeid",
+          "Vereniging van Raden van Arbeid",
+          "Vereeniging van Raden van Arbeid"
+        ],
+        "distance": 2
+      },
+      {
+        "id": "477547",
+        "names": [
+          "Pusat Kajian dan Perlindungan Anak (Indonesia)",
+          "PKPA",
+          "Center for study and child protection"
+        ],
+        "distance": 2
+      },
+      {
+        "id": "313162",
+        "names": [
+          "People's Democratic Party of Afghanistan",
+          "Parti Démocratique Populaire d'Afghanistan",
+          "PDPA"
+        ],
+        "distance": 2
+      },
+      {
+        "id": "483843",
+        "names": [
+          "Partido Socialista del Pueblo Andaluz",
+          "PSPA"
+        ],
+        "distance": 2
+      },
+      {
+        "id": "483843",
+        "names": [
+          "Partido Socialista del Pueblo Andaluz",
+          "PSPA"
+        ],
+        "distance": 2
+      },
+      {
+        "id": "185812",
+        "names": [
+          "Partido Socialista de Andalucía",
+          "PSA",
+          "Partido Andaluz"
+        ],
+        "distance": 2
+      },
+      {
+        "id": "571280",
+        "names": [
+          "PWA"
+        ],
+        "distance": 2
+      },
+      {
+        "id": "191622",
+        "names": [
+          "Platform van Organisaties van Alleenstaanden",
+          "PLOA"
+        ],
+        "distance": 2
+      },
+      {
+        "id": "2011525",
+        "names": [
+          "Participating Artists' Press Agency",
+          "PAPA"
+        ],
+        "distance": 2
+      }
+    ],
+    "golden": "460149",
+    "type": "corp",
+    "method": "levenshtein",
+    "controlaccess": true
+  }
+]
