@@ -25,6 +25,7 @@
     <dom4j.version>2.1.1</dom4j.version>
     <jaxen.version>1.2.0</jaxen.version>
     <guava.version>28.0-jre</guava.version>
+    <assertj-core.version>3.11.1</assertj-core.version>
   </properties>
 
   <dependencies>
@@ -93,6 +94,12 @@
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <version>${junit.jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${assertj-core.version}</version>
       <scope>test</scope>
     </dependency>
 

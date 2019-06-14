@@ -28,6 +28,6 @@ public class Main {
             logger.error("json dump or ead dir does not exist");
             return;
         }
-        new MergeService().merge(jsonDump, eadDir);
+        new MergeService(jsonDump, eadDir, "MERGED").merge();
     }
 }

@@ -11,14 +11,17 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -31,12 +34,27 @@ import static java.util.Arrays.asList;
 
 public class MergeService {
 
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+  private static final Logger logger = LoggerFactory.getLogger(MergeService.class);
   private final DocumentBuilder builder;
-  private final Map<String, Document> docs = new HashMap<>();
-  private final Map<String, Node> nodes = new HashMap<>();
+  private final String mergeFolder;
 
-  public MergeService() {
+  /**
+   * map<absolute-path-to-ead, xml-document>
+   */
+  private final Map<String, Document> docs = new HashMap<>();
+
+  /**
+   * map<item-id, item-node>
+   */
+  private final Map<String, Node> nodes = new HashMap<>();
+  private final Path jsonDump;
+  private final Path eadDir;
+
+  public MergeService(Path jsonDump, Path eadDir, String mergeFolder) {
+    this.jsonDump = jsonDump;
+    this.eadDir = eadDir;
+    this.mergeFolder = mergeFolder;
+
     var factory = DocumentBuilderFactory.newInstance();
     try {
       builder = factory.newDocumentBuilder();
@@ -45,7 +63,7 @@ public class MergeService {
     }
   }
 
-  public void merge(Path jsonDump, Path eadDir) {
+  public void merge() {
     List<ItemDto> items;
     try {
       items = asList(new ObjectMapper().readValue(jsonDump.toFile(), ItemDto[].class));
@@ -56,6 +74,30 @@ public class MergeService {
     items.forEach(i -> findNodeOfItem(eadDir, i));
     items.forEach(this::addNewControlAccessItem);
 
+    saveDocs();
+  }
+
+  private void saveDocs() {
+    var mergeFileDir = Paths.get("/", eadDir.toString(), mergeFolder);
+    mergeFileDir.toFile().mkdirs();
+
+    this.docs.forEach((originalPath, doc) -> {
+      saveDoc(mergeFileDir, Paths.get(originalPath), doc);
+    });
+  }
+
+  private void saveDoc(Path mergeFileDir, Path originalPath, Document doc) {
+    var newMergeFileName = originalPath.getFileName();
+    var newMergeFilePath = Paths.get(mergeFileDir.toString(), newMergeFileName.toString());
+
+    try {
+      newMergeFilePath.toFile().createNewFile();
+    } catch (IOException e) {
+      logger.error(format("Could not create merge file [%s]", newMergeFilePath), e);
+      return;
+    }
+
+    toFile(doc, newMergeFilePath);
   }
 
   private void findNodeOfItem(Path eadDir, ItemDto i) {
@@ -63,12 +105,12 @@ public class MergeService {
     var eadName = idParts[0] + ".xml";
     var itemN = Integer.parseInt(idParts[1]);
 
-    logger.info(format("handling id [%s]: file [%s] item [%d] input [%s]", i.id, eadName, itemN, i.input));
+    logger.info(format("Find node of item [%s]", i.id));
 
     var eadPath = Paths.get(eadDir.toString(), eadName);
 
     var doc = getDocument(eadPath);
-    if(doc == null) {
+    if (doc == null) {
       logger.error(format("Could not find document [%s]", i.input));
       return;
     }
@@ -79,39 +121,29 @@ public class MergeService {
     try {
       var nameType = i.type.getType() + "name";
       var expression = format("(//%s)[%d]", nameType, itemN + 1);
-      logger.info(format("expression [%s]", expression));
       var expr = xpath.compile(expression);
       var node = (Node) expr.evaluate(doc, XPathConstants.NODE);
 
-      if(node.getParentNode().getNodeName().equals("controlaccess")) {
-        logger.info(format("skip node in controlaccess [%s]", node.getTextContent()));
+      if (node.getParentNode().getNodeName().equals("controlaccess")) {
+        logger.info(format("skip controlaccess item [%s]", node.getTextContent()));
         return;
       }
-      logger.info(format("text [%s]", node.getTextContent()));
 
       nodes.put(i.id, node);
     } catch (NullPointerException | XPathExpressionException e) {
-      logger.error("Could not compile xpath");
+      logger.error(format("Could not find node of item [%s]", i.id), e);
     }
   }
 
   private void addNewControlAccessItem(ItemDto i) {
-    /*
-     * <controlaccess>
-     *   <controlaccess>
-     *     <persname encodinganalog="600$a" role="subject" source="NL-AMISG"
-     * authfilenumber="123456">Bos, Dennis</persname>
-     *   </controlaccess>
-     * </controlaccess>
-     */
     var node = nodes.get(i.id);
-    if(node == null) {
-      logger.warn(format("no node found for item [%s]", i.id));
+    if (node == null) {
+      logger.warn(format("No node found for item [%s]", i.id));
       return;
     }
     var controlAccessParent = getParentByNames(node, newArrayList("archdesc", "descgrp"));
-    if(controlAccessParent == null) {
-      logger.error(format("no parent for new controlaccess element of item [%s]", i.input));
+    if (controlAccessParent == null) {
+      logger.error(format("No parent for new controlaccess element of item [%s]", i.input));
       return;
     }
 
@@ -135,13 +167,11 @@ public class MergeService {
       .orElseThrow();
     var itemText = doc.createTextNode(candidate.names.get(0));
     item.appendChild(itemText);
-
-    logger.info("with new controlaccess elements: \n " + toString(doc));
   }
 
   private Document getDocument(Path eadPath) {
     var key = eadPath.toString();
-    if(docs.containsKey(key)) {
+    if (docs.containsKey(key)) {
       return docs.get(key);
     }
     try {
@@ -154,30 +184,35 @@ public class MergeService {
   }
 
   private Node getParentByNames(Node node, List<String> names) {
-    logger.info("get parent of node " + node.getNodeName());
     var parent = node.getParentNode();
-    if(parent == null) {
+    if (parent == null) {
       return null;
-    } else if(names.contains(parent.getNodeName())) {
+    } else if (names.contains(parent.getNodeName())) {
       return node;
     } else {
       return getParentByNames(parent, names);
     }
   }
 
-  private static String toString(Document doc) {
+  private static void toFile(Document doc, Path path) {
     try {
-      var sw = new StringWriter();
-      var tf = TransformerFactory.newInstance();
-      var transformer = tf.newTransformer();
-      transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-      transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-      transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-      transformer.transform(new DOMSource(doc), new StreamResult(sw));
-      return sw.toString();
-    } catch (Exception ex) {
-      throw new RuntimeException("Error converting to String", ex);
+      var transformer = getTransformer();
+      var writer = new FileWriter(path.toFile());
+      var result = new StreamResult(writer);
+      transformer.transform(new DOMSource(doc), result);
+    } catch (TransformerException | IOException ex) {
+      logger.error(format("Could not convert document to file [%s]", path), ex);
     }
   }
+
+  private static Transformer getTransformer() throws TransformerConfigurationException {
+    var tf = TransformerFactory.newInstance();
+    var transformer = tf.newTransformer();
+    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+    transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+    transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+    return transformer;
+  }
+
 }
 
