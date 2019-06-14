@@ -1,9 +1,9 @@
 Dockerfile
 hitime-annotator
 
-data/
+.dockerignore
+.git
 
-**/.*
-**/_*
+data/
 
 ui/node_modules
