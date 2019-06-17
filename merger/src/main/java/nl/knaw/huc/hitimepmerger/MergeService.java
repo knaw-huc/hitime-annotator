@@ -41,15 +41,15 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
  *
  * <ead>
  *   <archdesc>
- *     <descgrp> <!-- parent -->
+ *     <descgrp> <!-- parent contains items and controlaccess -->
  *       <controlaccess>  <!-- wrapper controlaccess -->
- *         <controlaccess> <!-- type control access -->
- *           <head>Personen/Persons</head> <!-- type (in dut/eng) -->
+ *         <controlaccess> <!-- type controlaccess -->
+ *           <head>Personen/Persons</head> <!-- head marks type of controlaccess (in dut or eng) -->
  *           <persname encodinganalog="600$a" role="subject">Janssen, Jan</persname> <!-- persname -->
  *           <persname encodinganalog="600$a" role="subject">Pietersen, Jan</persname> <!-- persname -->
  *         </controlaccess>
  *         <controlaccess> <!-- type control access -->
- *           <head>Organisaties/Organizations</head> <!-- type (in dut/eng) -->
+ *           <head>Organisaties/Organizations</head> <!-- corp type (in dut or eng) -->
  *           <corpname encodinganalog="610$a" role="subject">PvdA</corpname> <!-- corpname -->
  *         </controlaccess>
  *       </controlaccess>
@@ -134,10 +134,9 @@ public class MergeService {
     var itemN = Integer.parseInt(idParts[1]);
 
     var eadPath = Paths.get(eadDir.toString(), eadName);
-
     var doc = getDocument(eadPath);
     if (doc == null) {
-      logger.error(format("Could not find document [%s]", item.input));
+      logger.error(format("Could not find document of [%s]", eadDir));
       return;
     }
 
@@ -181,24 +180,32 @@ public class MergeService {
     var doc = node.getOwnerDocument();
     var newItemNode = createNewItemNode(item, doc, text);
 
-    // find parent element containing wrapper controlaccess element:
     var controlaccessParent = getParentByNames(node, newArrayList("archdesc", "descgrp"));
     if (controlaccessParent == null) {
       logger.error(format("No parent for new controlaccess element of item [%s]", item.input));
       return;
     }
 
-    var itemControlaccess = getTypeControlaccess(controlaccessParent, doc, item.type);
+    var itemControlaccess = getTypeControlaccess(controlaccessParent, item.type);
     itemControlaccess.appendChild(newItemNode);
   }
 
-
-  private Node createTypeControlaccess(Node controlaccessParent, Document doc, ItemType type) {
+  private Node createTypeControlaccess(Node controlaccessParent, ItemType type) {
+    var doc = controlaccessParent.getOwnerDocument();
     Node typeControlaccess = doc.createElement("controlaccess");
     controlaccessParent.appendChild(typeControlaccess);
     var head = doc.createElement("head");
     typeControlaccess.appendChild(head);
-    head.appendChild(doc.createTextNode(type.getHeadDut()));
+    var language = doc
+      .getElementsByTagName("language")
+      .item(0)
+      .getAttributes()
+      .getNamedItem("langcode")
+      .getNodeValue();
+    var headTxt = language.equals("dut")
+      ? type.getHeadDut()
+      : type.getHeadEng();
+    head.appendChild(doc.createTextNode(headTxt));
     return typeControlaccess;
   }
 
@@ -218,16 +225,12 @@ public class MergeService {
     itemEl.setAttribute("authfilenumber", "" + item.golden);
     itemEl.setAttribute("encodinganalog", item.type.getEncodinganalog());
 
-    logger.info("text: " + text);
     var itemText = doc.createTextNode(text);
     itemEl.appendChild(itemText);
     return itemEl;
   }
 
-  /**
-   * Find controlaccess element in wrapper controlaccess containing all pers- or corpnames (depending on type)
-   */
-  private Node getTypeControlaccess(Node controlAccessParent, Document doc, ItemType type) {
+  private Node getTypeControlaccess(Node controlAccessParent, ItemType type) {
     var wrapper = getWrapperControlaccess(controlAccessParent);
     for (var k = 0; k < wrapper.getChildNodes().getLength(); k++) {
       var typeControlaccess = wrapper.getChildNodes().item(k);
@@ -241,12 +244,9 @@ public class MergeService {
         return typeControlaccess;
       }
     }
-    return createTypeControlaccess(wrapper, doc, type);
+    return createTypeControlaccess(wrapper, type);
   }
 
-  /**
-   * Return controlaccess element around type controlaccess-elements
-   */
   private Node getWrapperControlaccess(Node controlAccessParent) {
     var children = controlAccessParent.getChildNodes();
     for (var i = 0; i < children.getLength(); i++) {
@@ -304,7 +304,7 @@ public class MergeService {
   }
 
   private String getItemKey(ItemDto item) {
-    return item.type.getType() + item.id;
+    return format("%s-%s", item.type.getType(), item.id);
   }
 
 }

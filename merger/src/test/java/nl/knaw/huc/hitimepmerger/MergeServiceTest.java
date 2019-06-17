@@ -68,6 +68,21 @@ class MergeServiceTest {
     assertThat(heads.item(1).getTextContent()).isIn(expectedHeads);
   }
 
+  @Test
+  void testMerge_shouldCreateEnglishHead_whenNotDutch() throws Exception {
+    var eadName = "ead-04-italian.xml";
+    var dumpMinimal = getTestResourcePath("dump-04-italian.json");
+    var eadPath = getTestResourcePath("FINAL/").getParent();
+
+    var mergeService = new MergeService(dumpMinimal, eadPath, "MERGED");
+    mergeService.merge();
+
+    var mergedFile = Paths.get(getTestResourcePath("MERGED").toString(), eadName);
+    assertTrue(mergedFile.toFile().exists());
+    var head = (Node) evaluate(mergedFile, "/ead/archdesc/descgrp/controlaccess/controlaccess/head", NODE);
+    assertThat(head.getTextContent()).isEqualTo("Persons");
+  }
+
   private static Path getTestResourcePath(String fileName) throws URISyntaxException {
     return Paths.get(
       Thread

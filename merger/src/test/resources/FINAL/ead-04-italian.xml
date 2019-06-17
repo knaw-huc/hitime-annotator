@@ -28,7 +28,7 @@
         <date normal="2017-05-31">2017-05-31</date>
       </creation>
       <langusage>Wethouder in weer en wind is in
-        <language langcode="dut" encodinganalog="041">Dutch</language>
+        <language langcode="ita" encodinganalog="041$a">Italian</language>
       </langusage>
     </profiledesc>
   </eadheader>
@@ -43,36 +43,13 @@
         <head>Biografie</head>
         <p><persname>Jan Janssen</persname> was wethouder in Winschoten.</p>
       </bioghist>
-      <controlaccess>
-        <controlaccess>
-          <head>Generated</head>
-          <persname encodinganalog="600$a" role="subject" source="NL-AMISG" authfilenumber="460147">Janssen, Jan</persname>
-        </controlaccess>
-      </controlaccess>
     </descgrp>
     <descgrp type="content_and_structure">
       <head>Inhoud en structuur</head>
       <scopecontent encodinganalog="520$a">
         <head>Inhoud</head>
-        <p><persname>Jan Janssen</persname> woonde al zijn hele leven in Winschoten waar hij wethouder was van de <corpname>PvdA</corpname>. Roegbainder <persname>Jan Klaassens</persname> was zijn steun en toeverlaat tijdens het aanleggen van de infameuze Blauwestad.</p>
+        <p>Jan Janssen woonde al zijn hele leven in Winschoten waar hij wethouder was van de PvdA. Roegbainder Jan Klaassens was zijn steun en toeverlaat tijdens het aanleggen van de infameuze Blauwestad.</p>
       </scopecontent>
-      <controlaccess>
-        <head>Generated</head>
-        <controlaccess>
-          <controlaccess>
-            <head>Personen</head>
-            <persname encodinganalog="600$a" role="subject" source="NL-AMISG" authfilenumber="460147">Janssen, Jan</persname>
-          </controlaccess>
-          <controlaccess>
-            <head>Personen</head>
-            <persname encodinganalog="600$a" role="subject" source="NL-AMISG" authfilenumber="460148">Klaassen, Jan</persname>
-          </controlaccess>
-          <controlaccess>
-            <head>Organisaties</head>
-            <corpname encodinganalog="610$a" role="subject" source="NL-AMISG" authfilenumber="460149">Partij van de Arbeid</corpname>
-          </controlaccess>
-        </controlaccess>
-      </controlaccess>
     </descgrp>
   </archdesc>
 </ead>

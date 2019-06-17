@@ -1,0 +1,19 @@
+[
+  {
+    "id": "FINAL/ead-04-italian.xml-0",
+    "input": "Jan Janssen",
+    "candidates": [
+      {
+        "id": "460147",
+        "names": [
+          "Janssen, Jan"
+        ],
+        "distance": 0
+      }
+    ],
+    "golden": "460147",
+    "type": "pers",
+    "method": "levenshtein",
+    "controlaccess": false
+  }
+]
