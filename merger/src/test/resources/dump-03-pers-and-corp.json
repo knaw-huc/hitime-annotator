@@ -126,6 +126,6 @@
     "golden": "460149",
     "type": "corp",
     "method": "levenshtein",
-    "controlaccess": true
+    "controlaccess": false
   }
 ]

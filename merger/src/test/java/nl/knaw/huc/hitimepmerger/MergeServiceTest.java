@@ -94,8 +94,12 @@ class MergeServiceTest {
 
     var mergedFile = Paths.get(getTestResourcePath("MERGED").toString(), eadName);
     assertTrue(mergedFile.toFile().exists());
+
+    var count = evaluate(mergedFile, "count(/ead/archdesc/descgrp[@type='context']/controlaccess/controlaccess/persname)", NUMBER);
+    assertThat(count).isEqualTo(1.0);
     var node = (Node) evaluate(mergedFile, "(/ead/archdesc/descgrp[@type='context']/controlaccess/controlaccess/persname)[1]", NODE);
     assertThat(node.getTextContent()).isEqualToIgnoringWhitespace("Janssen, Jan");
+
     var node2 = (Node) evaluate(mergedFile, "(/ead/archdesc/descgrp[@type='content_and_structure']/controlaccess/controlaccess/persname)[1]", NODE);
     assertThat(node2.getTextContent()).isEqualToIgnoringWhitespace("Janssen, Jan");
   }
@@ -109,5 +113,3 @@ class MergeServiceTest {
         .toURI());
   }
 }
-
-

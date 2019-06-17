@@ -128,6 +128,10 @@ public class MergeService {
       logger.info(format("Skip item [%s][%s]: field 'golden' not set", item.type.getType(), item.id));
       return;
     }
+    if (item.controlaccess) {
+      logger.info(format("Skip item [%s][%s]: is in controlaccess", item.type.getType(), item.id));
+      return;
+    }
 
     var idParts = item.id.split("\\.xml-");
     var eadName = idParts[0] + ".xml";
@@ -151,22 +155,17 @@ public class MergeService {
       var expr = xpath.compile(expression);
       node = (Node) expr.evaluate(doc, XPathConstants.NODE);
     } catch (NullPointerException | XPathExpressionException e) {
-      logger.error(format("Could not find item [%s]: ", item.id), e);
+      logger.error(format("Could not find item [%s][%s]: ", item.type.getType(), item.id), e);
       return;
     }
 
     if (node == null) {
-      logger.error(format("Could not find item [%s]", item.id));
-      return;
-    }
-
-    if (node.getParentNode().getNodeName().equals("controlaccess")) {
-      logger.error(format("Found item in controlaccess [%s]", node.getTextContent()));
+      logger.error(format("Could not find item [%s][%s]: ", item.type.getType(), item.id));
       return;
     }
 
     nodes.put(getItemKey(item), node);
-    logger.info(format("Found xml node of item [%s]", item.id));
+    logger.info(format("Found xml node of item [%s][%s]", item.type.getType(), item.id));
   }
 
   private void addNewControlAccessItem(String itemId, Node node) {
@@ -213,15 +212,17 @@ public class MergeService {
 
   private Node getTypeControlaccess(Node controlAccessParent, ItemType type) {
     var wrapper = getWrapperControlaccess(controlAccessParent);
-    for (var k = 0; k < wrapper.getChildNodes().getLength(); k++) {
-      var typeControlaccess = wrapper.getChildNodes().item(k);
+    for (var i = 0; i < wrapper.getChildNodes().getLength(); i++) {
+      var typeControlaccess = wrapper.getChildNodes().item(i);
       var head = typeControlaccess.getChildNodes().item(0);
+
+      if(head == null || !head.getNodeName().equals("head")) {
+        continue;
+      }
 
       var matchDut = head.getTextContent().equals(type.getHeadDut());
       var matchEng = head.getTextContent().equals(type.getHeadEng());
-      var isHead = head.getNodeName().equals("head");
-
-      if (isHead && (matchDut || matchEng)) {
+      if (matchDut || matchEng) {
         return typeControlaccess;
       }
     }
