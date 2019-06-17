@@ -83,6 +83,23 @@ class MergeServiceTest {
     assertThat(head.getTextContent()).isEqualTo("Persons");
   }
 
+  @Test
+  void testMerge_shouldIgnoreItemsInControlaccess_whenFindingItemsBasedOnId() throws Exception {
+    var eadName = "ead-05-with-controlaccess.xml";
+    var dumpMinimal = getTestResourcePath("dump-05-with-controlaccess.json");
+    var eadPath = getTestResourcePath("FINAL/").getParent();
+
+    var mergeService = new MergeService(dumpMinimal, eadPath, "MERGED");
+    mergeService.merge();
+
+    var mergedFile = Paths.get(getTestResourcePath("MERGED").toString(), eadName);
+    assertTrue(mergedFile.toFile().exists());
+    var node = (Node) evaluate(mergedFile, "(/ead/archdesc/descgrp[@type='context']/controlaccess/controlaccess/persname)[1]", NODE);
+    assertThat(node.getTextContent()).isEqualToIgnoringWhitespace("Janssen, Jan");
+    var node2 = (Node) evaluate(mergedFile, "(/ead/archdesc/descgrp[@type='content_and_structure']/controlaccess/controlaccess/persname)[1]", NODE);
+    assertThat(node2.getTextContent()).isEqualToIgnoringWhitespace("Janssen, Jan");
+  }
+
   private static Path getTestResourcePath(String fileName) throws URISyntaxException {
     return Paths.get(
       Thread

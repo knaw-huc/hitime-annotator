@@ -143,22 +143,30 @@ public class MergeService {
     var xPathfactory = XPathFactory.newInstance();
     var xpath = xPathfactory.newXPath();
 
+    var nameType = item.type.getElementName();
+    var expression = format("(//*[not(self::controlaccess)]/%s)[%d]", nameType, itemN + 1);
+
+    Node node;
     try {
-      var nameType = item.type.getElementName();
-      var expression = format("(//%s)[%d]", nameType, itemN + 1);
       var expr = xpath.compile(expression);
-      var node = (Node) expr.evaluate(doc, XPathConstants.NODE);
-
-      if (node.getParentNode().getNodeName().equals("controlaccess")) {
-        logger.info(format("skip controlaccess item [%s]", node.getTextContent()));
-        return;
-      }
-
-      nodes.put(getItemKey(item), node);
-      logger.info(format("Found node of item [%s]", item.id));
+      node = (Node) expr.evaluate(doc, XPathConstants.NODE);
     } catch (NullPointerException | XPathExpressionException e) {
-      logger.error(format("Could not find node of item [%s]", item.id), e);
+      logger.error(format("Could not find item [%s]: ", item.id), e);
+      return;
     }
+
+    if (node == null) {
+      logger.error(format("Could not find item [%s]", item.id));
+      return;
+    }
+
+    if (node.getParentNode().getNodeName().equals("controlaccess")) {
+      logger.error(format("Found item in controlaccess [%s]", node.getTextContent()));
+      return;
+    }
+
+    nodes.put(getItemKey(item), node);
+    logger.info(format("Found xml node of item [%s]", item.id));
   }
 
   private void addNewControlAccessItem(String itemId, Node node) {
