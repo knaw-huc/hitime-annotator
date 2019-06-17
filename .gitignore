@@ -14,3 +14,5 @@ node_modules
 # merger
 merger/target/*
 *.jar
+merger/*.log
+

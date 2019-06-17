@@ -125,7 +125,7 @@ public class MergeService {
 
   private void findNodeOfItem(Path eadDir, ItemDto item) {
     if (item.golden == null) {
-      logger.info("Skip item: field 'golden' not set");
+      logger.info(format("Skip item [%s][%s]: field 'golden' not set", item.type.getType(), item.id));
       return;
     }
 
@@ -180,7 +180,7 @@ public class MergeService {
     var doc = node.getOwnerDocument();
     var newItemNode = createNewItemNode(item, doc, text);
 
-    var controlaccessParent = getParentByNames(node, newArrayList("archdesc", "descgrp"));
+    var controlaccessParent = getParentByNames(node, newArrayList("did", "descgrp", "dsc"));
     if (controlaccessParent == null) {
       logger.error(format("No parent for new controlaccess element of item [%s]", item.input));
       return;
@@ -188,33 +188,6 @@ public class MergeService {
 
     var itemControlaccess = getTypeControlaccess(controlaccessParent, item.type);
     itemControlaccess.appendChild(newItemNode);
-  }
-
-  private Node createTypeControlaccess(Node controlaccessParent, ItemType type) {
-    var doc = controlaccessParent.getOwnerDocument();
-    Node typeControlaccess = doc.createElement("controlaccess");
-    controlaccessParent.appendChild(typeControlaccess);
-    var head = doc.createElement("head");
-    typeControlaccess.appendChild(head);
-    var language = doc
-      .getElementsByTagName("language")
-      .item(0)
-      .getAttributes()
-      .getNamedItem("langcode")
-      .getNodeValue();
-    var headTxt = language.equals("dut")
-      ? type.getHeadDut()
-      : type.getHeadEng();
-    head.appendChild(doc.createTextNode(headTxt));
-    return typeControlaccess;
-  }
-
-  private Node createWrapperControlaccess(Node controlAccessParent) {
-    Node wrapperControlaccess = controlAccessParent
-      .getOwnerDocument()
-      .createElement("controlaccess");
-    controlAccessParent.appendChild(wrapperControlaccess);
-    return wrapperControlaccess;
   }
 
   private Element createNewItemNode(ItemDto item, Document doc, String text) {
@@ -247,6 +220,25 @@ public class MergeService {
     return createTypeControlaccess(wrapper, type);
   }
 
+  private Node createTypeControlaccess(Node controlaccessParent, ItemType type) {
+    var doc = controlaccessParent.getOwnerDocument();
+    Node typeControlaccess = doc.createElement("controlaccess");
+    controlaccessParent.appendChild(typeControlaccess);
+    var head = doc.createElement("head");
+    typeControlaccess.appendChild(head);
+    var language = doc
+      .getElementsByTagName("language")
+      .item(0)
+      .getAttributes()
+      .getNamedItem("langcode")
+      .getNodeValue();
+    var headTxt = language.equals("dut")
+      ? type.getHeadDut()
+      : type.getHeadEng();
+    head.appendChild(doc.createTextNode(headTxt));
+    return typeControlaccess;
+  }
+
   private Node getWrapperControlaccess(Node controlAccessParent) {
     var children = controlAccessParent.getChildNodes();
     for (var i = 0; i < children.getLength(); i++) {
@@ -256,6 +248,14 @@ public class MergeService {
       }
     }
     return createWrapperControlaccess(controlAccessParent);
+  }
+
+  private Node createWrapperControlaccess(Node controlAccessParent) {
+    Node wrapperControlaccess = controlAccessParent
+      .getOwnerDocument()
+      .createElement("controlaccess");
+    controlAccessParent.appendChild(wrapperControlaccess);
+    return wrapperControlaccess;
   }
 
   private Document getDocument(Path eadPath) {
