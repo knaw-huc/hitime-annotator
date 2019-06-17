@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ead xmlns="urn:isbn:1-931666-22-9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     xsi:schemaLocation="urn:isbn:1-931666-22-9 http://www.loc.gov/ead/ead.xsd http://www.w3.org/1999/xlink http://www.loc.gov/standards/xlink/xlink.xsd">
+  <eadheader langencoding="iso639-2b" dateencoding="iso8601" countryencoding="iso3166-1" repositoryencoding="iso15511"
+             scriptencoding="iso15924" relatedencoding="MARC21">
+    <eadid countrycode="NL" mainagencycode="NL-TI" identifier="hdl:10622/COLL00531">
+      http://hdl.handle.net/10622/COLL00531
+    </eadid>
+    <filedesc>
+      <titlestmt>
+        <titleproper>Fotocollectie Harm Harmsen</titleproper>
+        <subtitle>Wethouder in weer en wind</subtitle>
+      </titlestmt>
+      <publicationstmt>
+        <publisher encodinganalog="260$b">Test Instituut</publisher>
+        <address>
+          <addressline>Hoofdstraat 1</addressline>
+          <addressline>1234 ZZ Adorp</addressline>
+          <addressline>The Netherlands
+          </addressline>
+        </address>
+      </publicationstmt>
+    </filedesc>
+    <profiledesc>
+      <creation>Wethouder in weer en wind created by created by Test Instituut
+        Department,
+        <date normal="2017-05-31">2017-05-31</date>
+      </creation>
+      <langusage>Wethouder in weer en wind is in
+        <language langcode="dut" encodinganalog="041">Dutch</language>
+      </langusage>
+    </profiledesc>
+  </eadheader>
+  <archdesc level="collection" type="inventory" relatedencoding="BLARP01">
+    <did>
+      <head>Overzicht collectie</head>
+      <unittitle label="Title" encodinganalog="245$a">Fotocollectie Harm Harmsen</unittitle>
+    </did>
+    <descgrp type="context">
+      <head>Archiefvorming</head>
+      <bioghist encodinganalog="545$a">
+        <head>Biografie</head>
+        <p><persname>Jan Janssen</persname> was wethouder in Winschoten.</p>
+      </bioghist>
+    </descgrp>
+    <descgrp type="content_and_structure">
+      <head>Inhoud en structuur</head>
+      <scopecontent encodinganalog="520$a">
+        <head>Inhoud</head>
+        <p>Jan Janssen woonde al zijn hele leven in Winschoten waar hij wethouder was van de PvdA. Roegbainder Jan Klaassens was zijn steun en toeverlaat tijdens het aanleggen van de infameuze Blauwestad.</p>
+      </scopecontent>
+    </descgrp>
+  </archdesc>
+</ead>

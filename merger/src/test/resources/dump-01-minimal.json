@@ -1,0 +1,36 @@
+[
+  {
+    "id": "FINAL/nonexistent-ead.xml-0",
+    "input": "Ted Test",
+    "candidates": [
+      {
+        "id": "460146",
+        "names": [
+          "Test, Ted"
+        ],
+        "distance": 0
+      }
+    ],
+    "golden": "460146",
+    "type": "pers",
+    "method": "levenshtein",
+    "controlaccess": false
+  },
+  {
+    "id": "FINAL/ead-01-minimal.xml-0",
+    "input": "Jan Janssen",
+    "candidates": [
+      {
+        "id": "460147",
+        "names": [
+          "Janssen, Jan"
+        ],
+        "distance": 0
+      }
+    ],
+    "golden": "460147",
+    "type": "pers",
+    "method": "levenshtein",
+    "controlaccess": false
+  }
+]
