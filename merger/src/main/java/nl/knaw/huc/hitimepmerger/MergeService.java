@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
@@ -24,7 +25,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +34,30 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
+/**
+ * Create new pers- and corpname elements in appropriate controlaccess element
+ *
+ * Structure:
+ *
+ * <ead>
+ *   <archdesc>
+ *     <descgrp> <!-- parent -->
+ *       <controlaccess>  <!-- wrapper controlaccess -->
+ *         <controlaccess> <!-- type control access -->
+ *           <head>Personen/Persons</head> <!-- type (in dut/eng) -->
+ *           <persname encodinganalog="600$a" role="subject">Janssen, Jan</persname> <!-- persname -->
+ *           <persname encodinganalog="600$a" role="subject">Pietersen, Jan</persname> <!-- persname -->
+ *         </controlaccess>
+ *         <controlaccess> <!-- type control access -->
+ *           <head>Organisaties/Organizations</head> <!-- type (in dut/eng) -->
+ *           <corpname encodinganalog="610$a" role="subject">PvdA</corpname> <!-- corpname -->
+ *         </controlaccess>
+ *       </controlaccess>
+ *     </descgrp>
+ *   </archdesc>
+ * </ead>
+ *
+ */
 public class MergeService {
 
   private static final Logger logger = LoggerFactory.getLogger(MergeService.class);
@@ -46,7 +70,7 @@ public class MergeService {
   private final Map<String, Document> docs = new HashMap<>();
 
   /**
-   * map<item-id, item-node>
+   * map<item-key, item-node>
    */
   private final Map<String, Node> nodes = new HashMap<>();
   private final Path jsonDump;
@@ -121,7 +145,7 @@ public class MergeService {
     var xpath = xPathfactory.newXPath();
 
     try {
-      var nameType = item.type.getType() + "name";
+      var nameType = item.type.getElementName();
       var expression = format("(//%s)[%d]", nameType, itemN + 1);
       var expr = xpath.compile(expression);
       var node = (Node) expr.evaluate(doc, XPathConstants.NODE);
@@ -131,7 +155,7 @@ public class MergeService {
         return;
       }
 
-      nodes.put(item.id, node);
+      nodes.put(getItemKey(item), node);
       logger.info(format("Found node of item [%s]", item.id));
     } catch (NullPointerException | XPathExpressionException e) {
       logger.error(format("Could not find node of item [%s]", item.id), e);
@@ -143,62 +167,95 @@ public class MergeService {
 
     var item = items
       .stream()
-      .filter((i) -> i.id.equals(itemId) && !isBlank(i.golden))
+      .filter((i) -> itemId.equals(getItemKey(i)) && !isBlank(i.golden))
       .findFirst()
       .orElseThrow();
 
-    var controlAccessParent = getParentByNames(node, newArrayList("archdesc", "descgrp"));
-    if (controlAccessParent == null) {
+    var selectedCandidate = item.candidates
+      .stream()
+      .filter(c -> c.id.equals(item.golden))
+      .findFirst()
+      .orElseThrow();
+
+    var text = selectedCandidate.names.get(0);
+    var doc = node.getOwnerDocument();
+    var newItemNode = createNewItemNode(item, doc, text);
+
+    // find parent element containing wrapper controlaccess element:
+    var controlaccessParent = getParentByNames(node, newArrayList("archdesc", "descgrp"));
+    if (controlaccessParent == null) {
       logger.error(format("No parent for new controlaccess element of item [%s]", item.input));
       return;
     }
 
-    var candidate = item.candidates
-      .stream()
-      .filter(c -> c.id.equals(item.golden))
-      .findFirst()
-      .orElse(null);
-    if (candidate == null) {
-      logger.error(format(
-        "Could not find golden candidate of item [id:%s;golden:%s;cand:%s]",
-        item.id, item.golden, Arrays.toString(item.candidates.stream().map(c -> c.id).toArray())
-      ));
-      return;
-    }
+    var itemControlaccess = getTypeControlaccess(controlaccessParent, doc, item.type);
+    itemControlaccess.appendChild(newItemNode);
+  }
 
-    var doc = node.getOwnerDocument();
 
-    var wrapperControlaccess = findControlaccess(controlAccessParent);
-    if(wrapperControlaccess == null) {
-      wrapperControlaccess = doc.createElement("controlaccess");
-      controlAccessParent.appendChild(wrapperControlaccess);
-    }
+  private Node createTypeControlaccess(Node controlaccessParent, Document doc, ItemType type) {
+    Node typeControlaccess = doc.createElement("controlaccess");
+    controlaccessParent.appendChild(typeControlaccess);
+    var head = doc.createElement("head");
+    typeControlaccess.appendChild(head);
+    head.appendChild(doc.createTextNode(type.getHeadDut()));
+    return typeControlaccess;
+  }
 
-    var itemControlaccess = doc.createElement("controlaccess");
-    wrapperControlaccess.appendChild(itemControlaccess);
-    var itemEl = doc.createElement("persname");
-    itemControlaccess.appendChild(itemEl);
+  private Node createWrapperControlaccess(Node controlAccessParent) {
+    Node wrapperControlaccess = controlAccessParent
+      .getOwnerDocument()
+      .createElement("controlaccess");
+    controlAccessParent.appendChild(wrapperControlaccess);
+    return wrapperControlaccess;
+  }
+
+  private Element createNewItemNode(ItemDto item, Document doc, String text) {
+    var itemEl = doc.createElement(item.type.getElementName());
 
     itemEl.setAttribute("role", "subject");
     itemEl.setAttribute("source", "NL-AMISG");
     itemEl.setAttribute("authfilenumber", "" + item.golden);
     itemEl.setAttribute("encodinganalog", item.type.getEncodinganalog());
 
-    var text = candidate.names.get(0);
     logger.info("text: " + text);
     var itemText = doc.createTextNode(text);
     itemEl.appendChild(itemText);
+    return itemEl;
   }
 
-  private Node findControlaccess(Node controlAccessParent) {
+  /**
+   * Find controlaccess element in wrapper controlaccess containing all pers- or corpnames (depending on type)
+   */
+  private Node getTypeControlaccess(Node controlAccessParent, Document doc, ItemType type) {
+    var wrapper = getWrapperControlaccess(controlAccessParent);
+    for (var k = 0; k < wrapper.getChildNodes().getLength(); k++) {
+      var typeControlaccess = wrapper.getChildNodes().item(k);
+      var head = typeControlaccess.getChildNodes().item(0);
+
+      var matchDut = head.getTextContent().equals(type.getHeadDut());
+      var matchEng = head.getTextContent().equals(type.getHeadEng());
+      var isHead = head.getNodeName().equals("head");
+
+      if (isHead && (matchDut || matchEng)) {
+        return typeControlaccess;
+      }
+    }
+    return createTypeControlaccess(wrapper, doc, type);
+  }
+
+  /**
+   * Return controlaccess element around type controlaccess-elements
+   */
+  private Node getWrapperControlaccess(Node controlAccessParent) {
     var children = controlAccessParent.getChildNodes();
     for (var i = 0; i < children.getLength(); i++) {
-      Node child = children.item(i);
+      var child = children.item(i);
       if (child.getNodeName().equals("controlaccess")) {
         return child;
       }
     }
-    return null;
+    return createWrapperControlaccess(controlAccessParent);
   }
 
   private Document getDocument(Path eadPath) {
@@ -244,6 +301,10 @@ public class MergeService {
     transformer.setOutputProperty(OutputKeys.METHOD, "xml");
     transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
     return transformer;
+  }
+
+  private String getItemKey(ItemDto item) {
+    return item.type.getType() + item.id;
   }
 
 }

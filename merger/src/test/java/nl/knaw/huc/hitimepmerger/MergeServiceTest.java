@@ -1,13 +1,18 @@
 package nl.knaw.huc.hitimepmerger;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static nl.knaw.huc.hitimepmerger.XmlUtil.getNode;
+import static com.google.common.collect.Lists.newArrayList;
+import static javax.xml.xpath.XPathConstants.NODE;
+import static javax.xml.xpath.XPathConstants.NODESET;
+import static javax.xml.xpath.XPathConstants.NUMBER;
+import static nl.knaw.huc.hitimepmerger.XmlUtil.evaluate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -24,7 +29,7 @@ class MergeServiceTest {
 
     var mergedFile = Paths.get(getTestResourcePath("MERGED").toString(), eadName);
     assertTrue(mergedFile.toFile().exists());
-    var node = getNode(mergedFile, "(/ead/archdesc/descgrp[@type='context']/controlaccess/controlaccess/persname)[1]");
+    var node = (Node) evaluate(mergedFile, "(/ead/archdesc/descgrp[@type='context']/controlaccess/controlaccess/persname)[1]", NODE);
     assertThat(node.getTextContent()).isEqualTo("Janssen, Jan");
   }
 
@@ -39,8 +44,28 @@ class MergeServiceTest {
 
     var mergedFile = Paths.get(getTestResourcePath("MERGED").toString(), eadName);
     assertTrue(mergedFile.toFile().exists());
-    var node = getNode(mergedFile, "/ead/archdesc/descgrp[@type='content_and_structure']/controlaccess");
-    assertThat(node.getChildNodes().getLength()).isEqualTo(2);
+    var count = evaluate(mergedFile, "count(/ead/archdesc/descgrp[@type='content_and_structure']/controlaccess/controlaccess/persname)", NUMBER);
+    assertThat(count).isEqualTo(2.0);
+  }
+
+  @Test
+  void testMerge_putsNamesOfPersAndCorpInDifferentControlaccessGroups() throws Exception {
+    var eadName = "ead-03-pers-and-corp.xml";
+    var dumpMinimal = getTestResourcePath("dump-03-pers-and-corp.json");
+    var eadPath = getTestResourcePath("FINAL/").getParent();
+
+    var mergeService = new MergeService(dumpMinimal, eadPath, "MERGED");
+    mergeService.merge();
+
+    var mergedFile = Paths.get(getTestResourcePath("MERGED").toString(), eadName);
+    assertTrue(mergedFile.toFile().exists());
+    var countHeads = evaluate(mergedFile, "count(/ead/archdesc/descgrp[@type='content_and_structure']/controlaccess/controlaccess)", NUMBER);
+    assertThat(countHeads).isEqualTo(2.0);
+    var heads = (NodeList) evaluate(mergedFile, "/ead/archdesc/descgrp[@type='content_and_structure']/controlaccess/controlaccess/head", NODESET);
+    assertThat(heads.getLength()).isEqualTo(2);
+    var expectedHeads = newArrayList("Personen", "Organisaties");
+    assertThat(heads.item(0).getTextContent()).isIn(expectedHeads);
+    assertThat(heads.item(1).getTextContent()).isIn(expectedHeads);
   }
 
   private static Path getTestResourcePath(String fileName) throws URISyntaxException {

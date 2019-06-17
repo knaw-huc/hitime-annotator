@@ -17,7 +17,7 @@
     "controlaccess": false
   },
   {
-    "id": "FINAL/minimal-ead.xml-0",
+    "id": "FINAL/ead-03-pers-and-corp.xml-0",
     "input": "Jan Janssen",
     "candidates": [
       {
@@ -34,24 +34,7 @@
     "controlaccess": false
   },
   {
-    "id": "FINAL/minimal-ead.xml-1",
-    "input": "Jan Janssen",
-    "candidates": [
-      {
-        "id": "460147",
-        "names": [
-          "Janssen, Jan"
-        ],
-        "distance": 0
-      }
-    ],
-    "golden": "460147",
-    "type": "pers",
-    "method": "levenshtein",
-    "controlaccess": false
-  },
-  {
-    "id": "FINAL/minimal-ead.xml-2",
+    "id": "FINAL/ead-03-pers-and-corp.xml-1",
     "input": "Jan Klaassen",
     "candidates": [
       {
@@ -68,7 +51,7 @@
     "controlaccess": false
   },
   {
-    "id": "FINAL/minimal-ead.xml-0",
+    "id": "FINAL/ead-03-pers-and-corp.xml-0",
     "input": "PvdA",
     "candidates": [
       {
