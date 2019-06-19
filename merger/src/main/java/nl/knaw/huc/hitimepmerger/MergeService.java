@@ -148,7 +148,7 @@ public class MergeService {
     var xpath = xPathfactory.newXPath();
 
     var nameType = item.type.getElementName();
-    var expression = format("(//*[not(self::controlaccess)]/%s)[%d]", nameType, itemN + 1);
+    var expression = format("(//%s)[%d]", nameType, itemN + 1);
 
     Node node;
     try {
@@ -185,7 +185,6 @@ public class MergeService {
 
     var text = selectedCandidate.names.get(0);
     var doc = node.getOwnerDocument();
-    var newItemNode = createNewItemNode(item, doc, text);
 
     var controlaccessParent = getParentByNames(node, newArrayList("did", "descgrp", "dsc"));
     if (controlaccessParent == null) {
@@ -194,27 +193,35 @@ public class MergeService {
     }
 
     var itemControlaccess = getTypeControlaccess(controlaccessParent, item.type);
-    itemControlaccess.appendChild(newItemNode);
+    var itemEl = findChildNodeByTextContent(itemControlaccess, selectedCandidate.names.get(0));
+    if(itemEl != null) {
+      setItemAttributes(item, itemEl);
+    } else {
+      var newItemNode = createNewItemNode(item, doc, text);
+      itemControlaccess.appendChild(newItemNode);
+    }
   }
 
   private Element createNewItemNode(ItemDto item, Document doc, String text) {
     var itemEl = doc.createElement(item.type.getElementName());
+    setItemAttributes(item, itemEl);
+    var itemText = doc.createTextNode(text);
+    itemEl.appendChild(itemText);
+    return itemEl;
+  }
 
+  private void setItemAttributes(ItemDto item, Element itemEl) {
     itemEl.setAttribute("role", "subject");
     itemEl.setAttribute("source", "NL-AMISG");
     itemEl.setAttribute("authfilenumber", "" + item.golden);
     itemEl.setAttribute("encodinganalog", item.type.getEncodinganalog());
-
-    var itemText = doc.createTextNode(text);
-    itemEl.appendChild(itemText);
-    return itemEl;
   }
 
   private Node getTypeControlaccess(Node controlAccessParent, ItemType type) {
     var wrapper = getWrapperControlaccess(controlAccessParent);
     for (var i = 0; i < wrapper.getChildNodes().getLength(); i++) {
       var typeControlaccess = wrapper.getChildNodes().item(i);
-      var head = typeControlaccess.getChildNodes().item(0);
+      var head = findChildNodeByName(typeControlaccess, "head");
 
       if(head == null || !head.getNodeName().equals("head")) {
         continue;
@@ -227,6 +234,28 @@ public class MergeService {
       }
     }
     return createTypeControlaccess(wrapper, type);
+  }
+
+  private Element findChildNodeByTextContent(Node node, String textContent) {
+    var childNodes = node.getChildNodes();
+    for (var i = 0; i < childNodes.getLength(); i++) {
+      var item = childNodes.item(i);
+      if(item.getTextContent().trim().equals(textContent.trim())) {
+        return (Element) item;
+      }
+    }
+    return null;
+  }
+
+  private Node findChildNodeByName(Node typeControlaccess, String name) {
+    var childNodes = typeControlaccess.getChildNodes();
+    for (var i = 0; i < childNodes.getLength(); i++) {
+      var childNode = childNodes.item(i);
+      if(childNode.getNodeName().equals(name)) {
+        return childNode;
+      }
+    }
+    return null;
   }
 
   private Node createTypeControlaccess(Node controlaccessParent, ItemType type) {
@@ -317,4 +346,3 @@ public class MergeService {
   }
 
 }
-

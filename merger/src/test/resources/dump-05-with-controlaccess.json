@@ -14,10 +14,27 @@
     "golden": "460147",
     "type": "pers",
     "method": "levenshtein",
-    "controlaccess": true
+    "controlaccess": false
   },
   {
     "id": "FINAL/ead-05-with-controlaccess.xml-1",
+    "input": "Jan Janssen",
+    "candidates": [
+      {
+        "id": "460147",
+        "names": [
+          "Janssen, Jan"
+        ],
+        "distance": 0
+      }
+    ],
+    "golden": "460147",
+    "type": "pers",
+    "method": "levenshtein",
+    "controlaccess": true
+  },
+  {
+    "id": "FINAL/ead-05-with-controlaccess.xml-2",
     "input": "Jan Janssen",
     "candidates": [
       {

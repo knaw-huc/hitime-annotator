@@ -84,7 +84,7 @@ class MergeServiceTest {
   }
 
   @Test
-  void testMerge_shouldIgnoreItemsInControlaccess_whenFindingItemsBasedOnId() throws Exception {
+  void testMerge_shouldIgnoreItemsInControlaccess_whenFindingByItemId() throws Exception {
     var eadName = "ead-05-with-controlaccess.xml";
     var dumpMinimal = getTestResourcePath("dump-05-with-controlaccess.json");
     var eadPath = getTestResourcePath("FINAL/").getParent();
@@ -102,6 +102,29 @@ class MergeServiceTest {
 
     var node2 = (Node) evaluate(mergedFile, "(/ead/archdesc/descgrp[@type='content_and_structure']/controlaccess/controlaccess/persname)[1]", NODE);
     assertThat(node2.getTextContent()).isEqualToIgnoringWhitespace("Janssen, Jan");
+  }
+
+  @Test
+  void testMerge_shouldMergeExistingPersCorpnameElementWithNewItems() throws Exception {
+    var eadName = "ead-06-existing-persname.xml";
+    var dumpMinimal = getTestResourcePath("dump-06-existing-persname.json");
+    var eadPath = getTestResourcePath("FINAL/").getParent();
+
+    var mergeService = new MergeService(dumpMinimal, eadPath, "MERGED");
+    mergeService.merge();
+
+    var mergedFile = Paths.get(getTestResourcePath("MERGED").toString(), eadName);
+    assertTrue(mergedFile.toFile().exists());
+
+    var count = evaluate(mergedFile, "count(/ead/archdesc/descgrp[@type='context']/controlaccess/controlaccess/persname)", NUMBER);
+    assertThat(count).isEqualTo(1.0);
+    var node = (Node) evaluate(mergedFile, "(/ead/archdesc/descgrp[@type='context']/controlaccess/controlaccess/persname)[1]", NODE);
+    assertThat(node.getTextContent()).isEqualToIgnoringWhitespace("Janssen, Jan");
+    assertThat(node.getAttributes().getNamedItem("authfilenumber").getTextContent()).isEqualToIgnoringWhitespace("460147");
+    assertThat(node.getAttributes().getNamedItem("encodinganalog").getTextContent()).isEqualToIgnoringWhitespace("600$a");
+    assertThat(node.getAttributes().getNamedItem("role").getTextContent()).isEqualToIgnoringWhitespace("subject");
+    assertThat(node.getAttributes().getNamedItem("source").getTextContent()).isEqualToIgnoringWhitespace("NL-AMISG");
+
   }
 
   private static Path getTestResourcePath(String fileName) throws URISyntaxException {

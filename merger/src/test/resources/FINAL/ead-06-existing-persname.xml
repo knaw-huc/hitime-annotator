@@ -46,7 +46,7 @@
       <controlaccess>
         <controlaccess>
           <head>Persons</head>
-          <persname authfilenumber="460147" encodinganalog="600$a" role="subject" source="NL-AMISG">Janssen, Jan
+          <persname authfilenumber="not460147" encodinganalog="not600$a" role="notsubject" source="notNL-AMISG">Janssen, Jan
           </persname>
         </controlaccess>
       </controlaccess>
@@ -55,7 +55,7 @@
       <head>Inhoud en structuur</head>
       <scopecontent encodinganalog="520$a">
         <head>Inhoud</head>
-        <p><persname>Jan Janssen</persname> woonde al zijn hele leven in Winschoten waar hij wethouder was van de PvdA. Roegbainder Jan Klaassens was zijn steun en toeverlaat tijdens het aanleggen van de infameuze Blauwestad.</p>
+        <p>Jan Janssen woonde al zijn hele leven in Winschoten waar hij wethouder was van de PvdA. Roegbainder Jan Klaassens was zijn steun en toeverlaat tijdens het aanleggen van de infameuze Blauwestad.</p>
       </scopecontent>
     </descgrp>
   </archdesc>
