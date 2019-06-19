@@ -12,9 +12,8 @@ import static com.google.common.collect.Lists.newArrayList;
 import static javax.xml.xpath.XPathConstants.NODE;
 import static javax.xml.xpath.XPathConstants.NODESET;
 import static javax.xml.xpath.XPathConstants.NUMBER;
-import static nl.knaw.huc.hitimepmerger.XmlUtil.evaluate;
+import static nl.knaw.huc.hitimepmerger.XmlTestUtil.evaluate;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MergeServiceTest {
 

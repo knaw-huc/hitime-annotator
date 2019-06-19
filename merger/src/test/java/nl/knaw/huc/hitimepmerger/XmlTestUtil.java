@@ -12,10 +12,9 @@ import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 
-import static javax.xml.xpath.XPathConstants.NODE;
 import static javax.xml.xpath.XPathConstants.STRING;
 
-public class XmlUtil {
+public class XmlTestUtil {
 
   private static final DocumentBuilder builder;
 

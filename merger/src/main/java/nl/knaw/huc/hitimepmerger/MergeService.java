@@ -11,19 +11,10 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -38,6 +29,10 @@ import static java.util.Arrays.asList;
 import static nl.knaw.huc.hitimepmerger.ItemType.CORP;
 import static nl.knaw.huc.hitimepmerger.ItemType.GEOG;
 import static nl.knaw.huc.hitimepmerger.ItemType.PERS;
+import static nl.knaw.huc.hitimepmerger.XmlUtil.findChildNodeByName;
+import static nl.knaw.huc.hitimepmerger.XmlUtil.findChildNodeByTextContent;
+import static nl.knaw.huc.hitimepmerger.XmlUtil.getParentByNames;
+import static nl.knaw.huc.hitimepmerger.XmlUtil.toFile;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
@@ -70,7 +65,7 @@ public class MergeService {
   /**
    * Elements that can contain a controlaccess section
    */
-  private static final List<String> parentNames = newArrayList("did", "descgrp", "dsc");
+  private static final List<String> parentNames = newArrayList("descgrp", "archdesc");
 
   private final DocumentBuilder builder;
   private final String mergeFolder;
@@ -166,12 +161,18 @@ public class MergeService {
       var expr = xpath.compile(expression);
       node = (Node) expr.evaluate(doc, XPathConstants.NODE);
     } catch (NullPointerException | XPathExpressionException e) {
-      logger.error(format("Could not find item [%s][%s]: ", item.type.getType(), item.id), e);
+      logger.error(format(
+        "Could not find [%s][%s] with [%s] in [%s]: ",
+        item.type.getType(), item.id, expression, eadPath
+      ), e);
       return;
     }
 
     if (node == null) {
-      logger.error(format("Could not find item [%s][%s]: ", item.type.getType(), item.id));
+      logger.error(format(
+        "Could not find [%s][%s] with [%s] in [%s]: ",
+        item.type.getType(), item.id, expression, eadPath
+      ));
       return;
     }
 
@@ -318,28 +319,6 @@ public class MergeService {
     return wrapperControlaccess;
   }
 
-  private Element findChildNodeByTextContent(Node node, String textContent) {
-    var childNodes = node.getChildNodes();
-    for (var i = 0; i < childNodes.getLength(); i++) {
-      var item = childNodes.item(i);
-      if (item.getTextContent().trim().equals(textContent.trim())) {
-        return (Element) item;
-      }
-    }
-    return null;
-  }
-
-  private Node findChildNodeByName(Node typeControlaccess, String name) {
-    var childNodes = typeControlaccess.getChildNodes();
-    for (var i = 0; i < childNodes.getLength(); i++) {
-      var childNode = childNodes.item(i);
-      if (childNode.getNodeName().equals(name)) {
-        return childNode;
-      }
-    }
-    return null;
-  }
-
   private Document getDocument(Path eadPath) {
     var key = eadPath.toString();
     if (docs.containsKey(key)) {
@@ -354,17 +333,6 @@ public class MergeService {
     return null;
   }
 
-  private Node getParentByNames(Node node, List<String> names) {
-    var parent = node.getParentNode();
-    if (parent == null) {
-      return null;
-    } else if (names.contains(parent.getNodeName())) {
-      return parent;
-    } else {
-      return getParentByNames(parent, names);
-    }
-  }
-
   private String getLanguage(Document doc) {
     return doc
       .getElementsByTagName("language")
@@ -372,26 +340,6 @@ public class MergeService {
       .getAttributes()
       .getNamedItem("langcode")
       .getNodeValue();
-  }
-
-  private static void toFile(Document doc, Path path) {
-    try {
-      var transformer = getTransformer();
-      var writer = new FileWriter(path.toFile());
-      var result = new StreamResult(writer);
-      transformer.transform(new DOMSource(doc), result);
-    } catch (TransformerException | IOException ex) {
-      logger.error(format("Could not convert document to file [%s]: %s", path, ex.getMessage()));
-    }
-  }
-
-  private static Transformer getTransformer() throws TransformerConfigurationException {
-    var tf = TransformerFactory.newInstance();
-    var transformer = tf.newTransformer();
-    transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-    transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-    transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-    return transformer;
   }
 
   private String getItemKey(ItemDto item) {
