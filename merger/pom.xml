@@ -42,13 +42,6 @@
       <version>${jaxen.version}</version>
     </dependency>
 
-    <!-- xml -->
-    <!--<dependency>-->
-      <!--<groupId>org.dom4j</groupId>-->
-      <!--<artifactId>dom4j</artifactId>-->
-      <!--<version>${dom4j.version}</version>-->
-    <!--</dependency>-->
-
     <!-- util -->
     <dependency>
       <groupId>org.apache.commons</groupId>

@@ -7,6 +7,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 
 enum ItemType {
 
+  GEOG("N.A.", "N.A.", "Geographic Names", "Geografische namen"),
   CORP("corp", "610$a", "Organizations", "Organisaties"),
   PERS("pers", "600$a", "Persons", "Personen");
 
