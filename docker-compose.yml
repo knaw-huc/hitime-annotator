@@ -1,9 +1,18 @@
 version '2'
 
+networks:
+  nginxproxynetwork:
+    external:
+      name: nginxproxynetwork
+
 services:
   hitime-annotator:
     container_name: hitime_annotator
     image: knawhuc/hitime-annotator:latest
     build: .
-    ports:
+    expose:
       - 8080
+    environment:
+      - VIRTUAL_HOST=hitimep.tt.di.huc.knaw.nl
+    networks:
+      - nginxproxynetwork 
