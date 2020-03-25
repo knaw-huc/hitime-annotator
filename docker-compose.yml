@@ -1,0 +1,9 @@
+version '2'
+
+services:
+  hitime-annotator:
+    container_name: hitime_annotator
+    image: knawhuc/hitime-annotator:latest
+    build: .
+    ports:
+      - 8080
