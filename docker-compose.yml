@@ -10,6 +10,7 @@ services:
     container_name: hitime_annotator
     image: knawhuc/hitime-annotator:latest
     build: .
+    tty: true
     expose:
       - 8080
     environment:
