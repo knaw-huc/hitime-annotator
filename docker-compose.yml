@@ -17,3 +17,5 @@ services:
       - VIRTUAL_HOST=hitimep.tt.di.huc.knaw.nl
     networks:
       - nginxproxynetwork 
+    volumes:
+      - /srv/hitimep/data:/data
