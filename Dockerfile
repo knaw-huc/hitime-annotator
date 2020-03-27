@@ -25,7 +25,7 @@ WORKDIR /hitime
 
 # Setup default REACT_APP_HOST for use on localhost
 # To override, use "--build-arg DEPLOY_URL=<value>"
-ARG DEPLOY_URL=http://localhost:8080
+ARG DEPLOY_URL=http://hitimep.tt.di.huc.knaw.nl:8080
 ENV REACT_APP_HOST=$DEPLOY_URL
 
 COPY ui/package.json .
